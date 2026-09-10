@@ -34,6 +34,24 @@
     .auth-card h2 { color: var(--primary); margin-top: 0; }
     .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
     .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    
+    /* Google Sign In Button */
+    .btn-google {
+      width: 100%; padding: 10px; background: #ffffff; color: #333; border: 1px solid #cbd5e1;
+      border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;
+      display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;
+    }
+    .btn-google:hover { background: #f8fafc; }
+
+    /* Divider */
+    .auth-divider {
+      display: flex; align-items: center; text-align: center; margin: 12px 0; color: #64748b; font-size: 12px;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; border-bottom: 1px solid #cbd5e1;
+    }
+    .auth-divider::before { margin-right: .5em; }
+    .auth-divider::after { margin-left: .5em; }
 
     /* Auth Error Banner */
     .auth-error {
@@ -53,6 +71,7 @@
     /* Action Toolbar */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; flex-wrap: wrap; }
     .btn-action { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .btn-save { background: #d97706; }
     .btn-export { background: #0284c7; }
     .btn-action:hover { opacity: 0.9; }
 
@@ -113,10 +132,18 @@
       getAuth, 
       createUserWithEmailAndPassword, 
       signInWithEmailAndPassword, 
+      signInWithPopup,
+      GoogleAuthProvider,
       signOut, 
       onAuthStateChanged,
       updateProfile 
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC4hWM0gh-CaDDuKE5rV2bP4JG8VcsY-aM",
@@ -128,37 +155,108 @@
       measurementId: "G-8KS68FXEJC"
     };
 
-    // Initialize Firebase & Auth
+    // Initialize Firebase Services
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
 
     // Initialize Analytics safely
     isSupported().then(supported => {
-      if (supported) {
-        getAnalytics(app);
-      }
+      if (supported) { getAnalytics(app); }
     });
 
-    // Expose instances and auth functions globally
     window.firebaseApp = app;
     window.auth = auth;
+    window.db = db;
+    window.currentUser = null;
 
-    // Listen to real-time Authentication State Changes
-    onAuthStateChanged(auth, (user) => {
+    // Listen to real-time Auth State Changes & load user data
+    onAuthStateChanged(auth, async (user) => {
       const overlay = document.getElementById('auth-overlay');
       const userDisplay = document.getElementById('user-display');
 
       if (user) {
+        window.currentUser = user;
         const displayName = user.displayName || user.email.split('@')[0];
         userDisplay.innerText = `Logged In: ${displayName}`;
         overlay.style.display = 'none';
+
+        // Load existing member BOQ data or initialize fresh template for new user
+        await loadUserBOQData(user.uid);
       } else {
+        window.currentUser = null;
         userDisplay.innerText = `Logged In: Guest`;
         overlay.style.display = 'flex';
+        clearGrid();
       }
     });
 
-    // Attach authentication handlers to global scope
+    // Save BOQ Document to Firestore
+    window.saveUserBOQData = async () => {
+      if (!window.currentUser) return;
+      const uid = window.currentUser.uid;
+
+      const items = [];
+      const rows = document.querySelectorAll('.item-data-row');
+      rows.forEach(row => {
+        items.push({
+          category: row.dataset.category,
+          desc: row.querySelector('.item-desc').value,
+          remark: row.querySelector('.item-remark').value,
+          unit: row.querySelector('.item-unit').value,
+          qty: parseFloat(row.querySelector('.item-qty').value) || 0,
+          rate: parseFloat(row.querySelector('.item-rate').value) || 0
+        });
+      });
+
+      try {
+        await setDoc(doc(db, "user_boqs", uid), {
+          updatedAt: new Date().toISOString(),
+          items: items
+        });
+        alert("BOQ Saved successfully to your cloud account!");
+      } catch (err) {
+        console.error("Firestore Save Error:", err);
+        alert("Failed to save BOQ data: " + err.message);
+      }
+    };
+
+    // Load BOQ Document from Firestore
+    async function loadUserBOQData(uid) {
+      clearGrid();
+      try {
+        const docRef = doc(db, "user_boqs", uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().items && docSnap.data().items.length > 0) {
+          // Member user with existing saved data
+          const items = docSnap.data().items;
+          items.forEach(item => {
+            renderGridRow(item.category, item.desc, item.remark, item.unit, item.qty, item.rate);
+          });
+        } else {
+          // New user gets a clean default template item
+          window.confirmAddItemWithParams("Architectural Works", "Floor Tiles (60x60 Porcelain)", "", "m²", 0, 25.00);
+        }
+        calculateBOQ();
+      } catch (err) {
+        console.error("Firestore Load Error:", err);
+        window.confirmAddItemWithParams("Architectural Works", "Floor Tiles (60x60 Porcelain)", "", "m²", 0, 25.00);
+      }
+    }
+
+    // Google Sign In / Sign Up
+    window.firebaseGoogleAuth = async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (error) {
+        const errorElem = document.getElementById('signin-error');
+        errorElem.innerText = error.message.replace('Firebase: ', '');
+        errorElem.style.display = 'block';
+      }
+    };
+
     window.firebaseSignUp = async (displayName, email, password) => {
       const errorElem = document.getElementById('signup-error');
       errorElem.style.display = 'none';
@@ -209,19 +307,33 @@
   <div id="auth-overlay">
     <div class="auth-card" id="signin-box">
       <h2>Sign In — BOQ Engine</h2>
+      <button class="btn-google" onclick="window.firebaseGoogleAuth()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        Sign in with Google
+      </button>
+
+      <div class="auth-divider">OR</div>
+
       <input type="email" class="auth-input" id="auth-email-in" placeholder="Email Address">
       <input type="password" class="auth-input" id="auth-pass-in" placeholder="Password">
-      <button class="btn-auth" onclick="handleSignIn()">Sign In</button>
+      <button class="btn-auth" onclick="handleSignIn()">Sign In with Email</button>
       <div id="signin-error" class="auth-error"></div>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Don't have an account? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign Up</a></p>
     </div>
 
     <div class="auth-card" id="signup-box" style="display:none;">
       <h2>Create Account</h2>
+      <button class="btn-google" onclick="window.firebaseGoogleAuth()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        Sign up with Google
+      </button>
+
+      <div class="auth-divider">OR</div>
+
       <input type="text" class="auth-input" id="auth-name-up" placeholder="Full Name (e.g., SOKPANHA)">
       <input type="email" class="auth-input" id="auth-email-up" placeholder="Email Address">
       <input type="password" class="auth-input" id="auth-pass-up" placeholder="Password (min. 6 characters)">
-      <button class="btn-auth" onclick="handleSignUp()">Sign Up</button>
+      <button class="btn-auth" onclick="handleSignUp()">Sign Up with Email</button>
       <div id="signup-error" class="auth-error"></div>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Already registered? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign In</a></p>
     </div>
@@ -241,6 +353,7 @@
 
   <div class="toolbar">
     <button class="btn-action" onclick="openAddModal()">+ Add Item / Custom Item</button>
+    <button class="btn-action btn-save" onclick="window.saveUserBOQData()">☁️ Save BOQ to Cloud</button>
     <button class="btn-action btn-export" onclick="exportToExcel()">📊 Export to Excel (.xlsx)</button>
   </div>
 
@@ -259,7 +372,7 @@
         </tr>
       </thead>
 
-      <!-- CATEGORY SECTIONS WITH PREFIX CODES -->
+      <!-- CATEGORY SECTIONS -->
       <tbody id="sec-structure" data-prefix="1">
         <tr class="category-header-row">
           <td colspan="7">1.0 STRUCTURE WORKS</td>
@@ -332,7 +445,7 @@
   <script>
     let rowCounter = 0;
 
-    const categoryCounters = {
+    let categoryCounters = {
       "Structure Works": 0,
       "Architectural Works": 0,
       "MEP Works": 0
@@ -357,26 +470,60 @@
       ]
     };
 
-    // Trigger Firebase Sign In
+    function clearGrid() {
+      rowCounter = 0;
+      categoryCounters = { "Structure Works": 0, "Architectural Works": 0, "MEP Works": 0 };
+      document.querySelectorAll('.item-data-row').forEach(el => el.remove());
+      calculateBOQ();
+    }
+
+    function renderGridRow(category, description, remark = "", unit = "m²", qty = 0, rate = 25.00) {
+      rowCounter++;
+      categoryCounters[category]++;
+
+      const catIndex = (category === "Structure Works") ? 1 : (category === "Architectural Works") ? 2 : 3;
+      const subIndex = String(categoryCounters[category]).padStart(2, '0');
+      const itemSeriesNo = `${catIndex}.${subIndex}`;
+
+      let targetSectionId = "sec-architectural";
+      if (category === "Structure Works") targetSectionId = "sec-structure";
+      if (category === "MEP Works") targetSectionId = "sec-mep";
+
+      const rowHTML = `
+        <tr id="grid-row-${rowCounter}" class="item-data-row" data-category="${category}">
+          <td align="center" style="font-weight:bold; color: var(--primary);">${itemSeriesNo}</td>
+          <td>
+            <input type="text" class="excel-input excel-text item-desc" id="desc-${rowCounter}" value="${description}">
+            <input type="text" class="remark-input item-remark" id="remark-${rowCounter}" value="${remark}" placeholder="+ Add Remark / Specification...">
+          </td>
+          <td><input list="unit-options" class="excel-input item-unit" id="unit-${rowCounter}" value="${unit}"></td>
+          <td><input type="number" class="excel-input item-qty" id="qty-${rowCounter}" placeholder="0" value="${qty || ''}" oninput="calculateBOQ()"></td>
+          <td><input type="number" class="excel-input item-rate" id="rate-${rowCounter}" value="${rate}" oninput="calculateBOQ()"></td>
+          <td align="right" style="font-weight:bold; color: var(--primary-light);" class="item-total" id="total-${rowCounter}">$0.00</td>
+          <td align="center"><button class="btn-remove" onclick="removeGridRow(${rowCounter})">X</button></td>
+        </tr>
+      `;
+
+      document.getElementById(targetSectionId).insertAdjacentHTML('beforeend', rowHTML);
+    }
+
+    window.confirmAddItemWithParams = (category, desc, remark, unit, qty, rate) => {
+      renderGridRow(category, desc, remark, unit, qty, rate);
+    };
+
     function handleSignIn() {
       const email = document.getElementById('auth-email-in').value.trim();
       const pass = document.getElementById('auth-pass-in').value;
-      if (email && pass) {
-        window.firebaseSignIn(email, pass);
-      }
+      if (email && pass) { window.firebaseSignIn(email, pass); }
     }
 
-    // Trigger Firebase Sign Up
     function handleSignUp() {
       const name = document.getElementById('auth-name-up').value.trim();
       const email = document.getElementById('auth-email-up').value.trim();
       const pass = document.getElementById('auth-pass-up').value;
-      if (email && pass) {
-        window.firebaseSignUp(name, email, pass);
-      }
+      if (email && pass) { window.firebaseSignUp(name, email, pass); }
     }
 
-    // Trigger Firebase Sign Out
     function handleLogout() {
       window.firebaseSignOut();
     }
@@ -425,40 +572,15 @@
     }
 
     function confirmAddItem() {
-      rowCounter++;
       const category = document.getElementById('modal-category').value;
       const subSelectValue = document.getElementById('modal-subitem').value;
 
       let itemDescription = subSelectValue;
       if (subSelectValue === 'CUSTOM_ITEM') {
-        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${rowCounter}`;
+        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${rowCounter + 1}`;
       }
 
-      categoryCounters[category]++;
-      const catIndex = (category === "Structure Works") ? 1 : (category === "Architectural Works") ? 2 : 3;
-      const subIndex = String(categoryCounters[category]).padStart(2, '0');
-      const itemSeriesNo = `${catIndex}.${subIndex}`;
-
-      let targetSectionId = "sec-architectural";
-      if (category === "Structure Works") targetSectionId = "sec-structure";
-      if (category === "MEP Works") targetSectionId = "sec-mep";
-
-      const rowHTML = `
-        <tr id="grid-row-${rowCounter}" class="item-data-row">
-          <td align="center" style="font-weight:bold; color: var(--primary);">${itemSeriesNo}</td>
-          <td>
-            <input type="text" class="excel-input excel-text item-desc" id="desc-${rowCounter}" value="${itemDescription}">
-            <input type="text" class="remark-input item-remark" id="remark-${rowCounter}" placeholder="+ Add Remark / Specification...">
-          </td>
-          <td><input list="unit-options" class="excel-input item-unit" id="unit-${rowCounter}" value="m²"></td>
-          <td><input type="number" class="excel-input item-qty" id="qty-${rowCounter}" placeholder="0" value="" oninput="calculateBOQ()"></td>
-          <td><input type="number" class="excel-input item-rate" id="rate-${rowCounter}" value="25.00" oninput="calculateBOQ()"></td>
-          <td align="right" style="font-weight:bold; color: var(--primary-light);" class="item-total" id="total-${rowCounter}">$0.00</td>
-          <td align="center"><button class="btn-remove" onclick="removeGridRow(${rowCounter})">X</button></td>
-        </tr>
-      `;
-
-      document.getElementById(targetSectionId).insertAdjacentHTML('beforeend', rowHTML);
+      renderGridRow(category, itemDescription, "", "m²", 0, 25.00);
       closeAddModal();
       calculateBOQ();
     }
@@ -542,10 +664,6 @@
       XLSX.utils.book_append_sheet(workbook, worksheet, "BOQ_Summary");
       XLSX.writeFile(workbook, "BOQ_Project_Export.xlsx");
     }
-
-    window.onload = function() {
-      confirmAddItem();
-    };
   </script>
 </body>
 </html>
