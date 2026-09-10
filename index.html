@@ -3,289 +3,324 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive BOQ Web App</title>
+  <title>Green BOQ Pro Engine</title>
   <style>
     :root {
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --success: #16a34a;
-      --bg: #f8fafc;
+      --primary: #064e3b;      /* Deep Emerald Green */
+      --primary-light: #059669;/* Bright Emerald Green */
+      --accent: #10b981;       /* Light Accent Green */
+      --bg-light: #f0fdf4;     /* Mint Tinted White */
       --card-bg: #ffffff;
-      --border: #cbd5e1;
+      --text-dark: #0f172a;
+      --border: #a7f3d0;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); margin: 0; padding: 12px; color: #334155; }
+    body { background-color: var(--bg-light); margin: 0; padding: 12px; color: var(--text-dark); }
 
+    /* Auth Screens Overlay */
+    #auth-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(6, 78, 59, 0.95);
+      display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .auth-card {
+      background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 380px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 2px solid var(--accent);
+    }
+    .auth-card h2 { color: var(--primary); margin-top: 0; }
+    .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
+    .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+    /* Top Navigation Header */
     .app-header {
-      background: var(--primary);
-      color: white;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
+      background: var(--primary); color: white; padding: 16px; border-radius: 8px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
     .app-title { margin: 0; font-size: 18px; font-weight: 700; }
-    .badge { background: var(--success); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .user-badge { background: #022c22; color: #a7f3d0; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
 
-    /* WBS Chapter Styling */
-    .chapter-title {
-      background: #e2e8f0;
-      padding: 10px 14px;
-      font-weight: bold;
-      border-radius: 6px;
-      margin: 16px 0 10px 0;
-      color: var(--primary);
-      display: flex;
-      justify-content: space-between;
-    }
+    /* Action Toolbar */
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; }
+    .btn-add { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .btn-add:hover { background: var(--primary); }
 
-    /* Mobile Card Layout */
+    /* Cards & Containers */
     .boq-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px; margin-bottom: 12px; position: relative;
+      box-shadow: 0 2px 4px rgba(6, 78, 59, 0.05);
     }
+    .chapter-badge { background: #d1fae5; color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 6px; }
     .item-header { font-weight: 600; color: var(--primary); margin-bottom: 10px; font-size: 15px; }
     .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
     
-    input[type="number"] {
-      width: 100px;
-      padding: 6px 8px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      text-align: right;
-      font-size: 14px;
-      font-weight: 600;
-      background: #f1f5f9;
-    }
-    input[type="number"]:focus { outline: 2px solid var(--accent); background: #fff; }
-
-    .line-total {
-      font-weight: bold;
-      color: var(--success);
-      font-size: 15px;
-      border-top: 1px dashed var(--border);
-      padding-top: 8px;
-      margin-top: 8px;
-      display: flex;
-      justify-content: space-between;
+    input[type="number"], input[list] {
+      width: 120px; padding: 6px 8px; border: 1px solid var(--border);
+      border-radius: 6px; text-align: right; font-size: 14px; font-weight: 600; background: #fafafa;
     }
 
-    /* Summary Section */
-    .summary-box {
-      background: var(--primary);
-      color: white;
-      padding: 16px;
-      border-radius: 8px;
-      margin-top: 20px;
+    .btn-remove { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+    .line-total { font-weight: bold; color: var(--primary-light); font-size: 15px; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between; }
+
+    /* Modal Panel for Adding Items */
+    #modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 500;
     }
+    .modal-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; border-top: 6px solid var(--primary-light); }
+    .modal-select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+
+    /* Summary Dashboard */
+    .summary-box { background: var(--primary); color: white; padding: 16px; border-radius: 8px; margin-top: 20px; }
     .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-    .grand-total { font-size: 18px; font-weight: bold; border-top: 1px solid #334155; padding-top: 10px; color: #4ade80; }
-
-    /* Desktop/Tablet Table Layout */
-    .table-container { display: none; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
-    th { background: #f1f5f9; font-weight: 600; }
-
-    @media (min-width: 768px) {
-      .card-view { display: none; }
-      .table-container { display: block; }
-    }
+    .grand-total { font-size: 18px; font-weight: bold; border-top: 1px solid var(--accent); padding-top: 10px; color: #a7f3d0; }
   </style>
 </head>
 <body>
 
-  <!-- App Bar -->
+  <!-- Shared Dropdown List for Customizable Units -->
+  <datalist id="unit-options">
+    <option value="m²"></option>
+    <option value="m³"></option>
+    <option value="m"></option>
+    <option value="Kg"></option>
+    <option value="Ton"></option>
+    <option value="Set"></option>
+    <option value="Lot"></option>
+    <option value="Pcs"></option>
+  </datalist>
+
+  <!-- 1. SIGN IN / SIGN UP AUTHENTICATION MODAL -->
+  <div id="auth-overlay">
+    <div class="auth-card" id="signin-box">
+      <h2>Sign In — BOQ Engine</h2>
+      <input type="text" class="auth-input" id="auth-email" placeholder="Email / Username">
+      <input type="password" class="auth-input" placeholder="Password">
+      <button class="btn-auth" onclick="handleAuth()">Sign In</button>
+      <p style="font-size: 12px; text-align: center; margin-top: 12px;">Don't have an account? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign Up</a></p>
+    </div>
+    <div class="auth-card" id="signup-box" style="display:none;">
+      <h2>Create Account</h2>
+      <input type="text" class="auth-input" placeholder="Full Name">
+      <input type="email" class="auth-input" placeholder="Email">
+      <input type="password" class="auth-input" placeholder="Password">
+      <button class="btn-auth" onclick="handleAuth()">Sign Up</button>
+      <p style="font-size: 12px; text-align: center; margin-top: 12px;">Already registered? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign In</a></p>
+    </div>
+  </div>
+
+  <!-- MAIN BOQ APPLICATION -->
   <div class="app-header">
     <div>
-      <h1 class="app-title">Embassy Renovation — BOQ Engine</h1>
-      <small style="opacity: 0.8">Interactive Test Environment</small>
+      <h1 class="app-title">BOQ Builder Engine</h1>
+      <small style="opacity: 0.9;">Green Theme Edition</small>
     </div>
-    <span class="badge">Live Sync Active</span>
+    <span class="user-badge" id="user-display">Logged In: Guest</span>
   </div>
 
-  <!-- Mobile Card View (Smartphone) -->
-  <div class="card-view">
-    <div class="chapter-title">
-      <span>1.0 Substructure & Foundation</span>
-    </div>
+  <div class="toolbar">
+    <!-- 3. ADD ITEM BUTTON -->
+    <button class="btn-add" onclick="openAddModal()">+ Add New Item</button>
+    <span style="font-size: 12px; color: var(--primary-light); font-weight: bold;">Emerald-White Mode</span>
+  </div>
 
-    <!-- Item 1 -->
-    <div class="boq-card">
-      <div class="item-header">1.1 Site Excavation (Machine)</div>
+  <!-- BOQ Items Container -->
+  <div id="boq-items-list">
+    <!-- Pre-populated default item -->
+    <div class="boq-card" id="item-card-1">
+      <span class="chapter-badge">Architectural Works</span>
+      <button class="btn-remove" style="float: right;" onclick="removeItem(1)">Remove</button>
+      <div class="item-header">Floor Tiles (60x60 Porcelain)</div>
+      
+      <!-- 4. CUSTOMIZABLE / WRITABLE UNIT SELECTOR -->
       <div class="input-group">
-        <span>Unit:</span> <strong>m³</strong>
+        <span>Unit:</span>
+        <input list="unit-options" id="unit-1" value="m²" placeholder="Select or type unit...">
       </div>
       <div class="input-group">
         <span>Quantity:</span>
-        <input type="number" id="card-qty-1" value="450" oninput="calculateBOQ()">
+        <input type="number" id="qty-1" value="100" oninput="calculateBOQ()">
       </div>
       <div class="input-group">
         <span>Unit Rate ($):</span>
-        <input type="number" id="card-rate-1" value="4.50" step="0.5" oninput="calculateBOQ()">
+        <input type="number" id="rate-1" value="25.00" oninput="calculateBOQ()">
       </div>
       <div class="line-total">
-        <span>Total:</span>
-        <span id="card-total-1">$0.00</span>
-      </div>
-    </div>
-
-    <!-- Item 2 -->
-    <div class="boq-card">
-      <div class="item-header">1.2 Lean Concrete (100mm, C15/20)</div>
-      <div class="input-group">
-        <span>Unit:</span> <strong>m²</strong>
-      </div>
-      <div class="input-group">
-        <span>Quantity:</span>
-        <input type="number" id="card-qty-2" value="280" oninput="calculateBOQ()">
-      </div>
-      <div class="input-group">
-        <span>Unit Rate ($):</span>
-        <input type="number" id="card-rate-2" value="15.50" step="0.5" oninput="calculateBOQ()">
-      </div>
-      <div class="line-total">
-        <span>Total:</span>
-        <span id="card-total-2">$0.00</span>
-      </div>
-    </div>
-
-    <div class="chapter-title">
-      <span>2.0 Architectural Works</span>
-    </div>
-
-    <!-- Item 3 -->
-    <div class="boq-card">
-      <div class="item-header">2.1 Polished Porcelain Tiles (60x60)</div>
-      <div class="input-group">
-        <span>Unit:</span> <strong>m²</strong>
-      </div>
-      <div class="input-group">
-        <span>Quantity:</span>
-        <input type="number" id="card-qty-3" value="620" oninput="calculateBOQ()">
-      </div>
-      <div class="input-group">
-        <span>Unit Rate ($):</span>
-        <input type="number" id="card-rate-3" value="34.00" step="0.5" oninput="calculateBOQ()">
-      </div>
-      <div class="line-total">
-        <span>Total:</span>
-        <span id="card-total-3">$0.00</span>
+        <span>Subtotal:</span>
+        <span id="total-1">$2,500.00</span>
       </div>
     </div>
   </div>
 
-  <!-- Tablet / Desktop Table View -->
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Description</th>
-          <th>Unit</th>
-          <th style="text-align: right">Qty</th>
-          <th style="text-align: right">Unit Rate ($)</th>
-          <th style="text-align: right">Total Amount ($)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background:#f1f5f9; font-weight:bold;"><td colspan="6">1.0 Substructure & Foundation</td></tr>
-        <tr>
-          <td>1.1</td><td>Site Excavation (Machine)</td><td>m³</td>
-          <td align="right"><input type="number" id="tbl-qty-1" value="450" oninput="syncInputs(1, 'qty')"></td>
-          <td align="right"><input type="number" id="tbl-rate-1" value="4.50" step="0.5" oninput="syncInputs(1, 'rate')"></td>
-          <td align="right" id="tbl-total-1" style="font-weight:600">$0.00</td>
-        </tr>
-        <tr>
-          <td>1.2</td><td>Lean Concrete (100mm, C15/20)</td><td>m²</td>
-          <td align="right"><input type="number" id="tbl-qty-2" value="280" oninput="syncInputs(2, 'qty')"></td>
-          <td align="right"><input type="number" id="tbl-rate-2" value="15.50" step="0.5" oninput="syncInputs(2, 'rate')"></td>
-          <td align="right" id="tbl-total-2" style="font-weight:600">$0.00</td>
-        </tr>
-        <tr style="background:#f1f5f9; font-weight:bold;"><td colspan="6">2.0 Architectural Works</td></tr>
-        <tr>
-          <td>2.1</td><td>Polished Porcelain Tiles (60x60)</td><td>m²</td>
-          <td align="right"><input type="number" id="tbl-qty-3" value="620" oninput="syncInputs(3, 'qty')"></td>
-          <td align="right"><input type="number" id="tbl-rate-3" value="34.00" step="0.5" oninput="syncInputs(3, 'rate')"></td>
-          <td align="right" id="tbl-total-3" style="font-weight:600">$0.00</td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- 3. ADD ITEM MODAL PANEL -->
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <h3 style="margin-top:0; color: var(--primary);">Add Item to BOQ</h3>
+      
+      <label style="font-size:12px; font-weight:bold;">1. Select Category:</label>
+      <select class="modal-select" id="modal-category" onchange="updateSubItemOptions()">
+        <option value="Structure Works">1.0 Structure Works</option>
+        <option value="Architectural Works" selected>2.0 Architectural Works</option>
+        <option value="MEP Works">3.0 MEP Works</option>
+      </select>
+
+      <label style="font-size:12px; font-weight:bold;">2. Select Sub-Item:</label>
+      <select class="modal-select" id="modal-subitem">
+        <!-- Dynamically populated -->
+      </select>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button onclick="closeAddModal()" style="padding: 8px 12px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+        <button onclick="confirmAddItem()" style="padding: 8px 12px; background: var(--primary-light); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Add Item</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Summary Total Card -->
+  <!-- SUMMARY DASHBOARD -->
   <div class="summary-box">
     <div class="summary-row">
       <span>Sub-Total:</span>
-      <span id="summary-subtotal">$0.00</span>
+      <span id="summary-subtotal">$2,500.00</span>
     </div>
     <div class="summary-row">
       <span>Contingency (5%):</span>
-      <span id="summary-contingency">$0.00</span>
+      <span id="summary-contingency">$125.00</span>
     </div>
     <div class="summary-row">
       <span>VAT (10%):</span>
-      <span id="summary-vat">$0.00</span>
+      <span id="summary-vat">$262.50</span>
     </div>
     <div class="summary-row grand-total">
       <span>GRAND TOTAL:</span>
-      <span id="summary-grandtotal">$0.00</span>
+      <span id="summary-grandtotal">$2,887.50</span>
     </div>
   </div>
 
-  <!-- JavaScript Calculation Engine -->
+  <!-- JAVASCRIPT ENGINE -->
   <script>
+    let itemCount = 1;
+
+    // Sub-items database based on category choice
+    const subItemsDatabase = {
+      "Structure Works": ["Site Excavation", "Lean Concrete C15/20", "Reinforcement Rebar (Steel)", "Formwork & Shoring", "Concrete Footings"],
+      "Architectural Works": ["Wall Partition (Gypsum)", "Wall Painting (Emulsion)", "Floor Tiles (Porcelain)", "Suspended Ceiling Board", "Aluminum Fixed Glazing"],
+      "MEP Works": ["Electrical Wiring & Conduit", "LED Lighting Fixtures", "Sanitary Pipes (PPR/PVC)", "Air Conditioning Unit", "Distribution Panel Board"]
+    };
+
+    // Auth handler
+    function handleAuth() {
+      const emailInput = document.getElementById('auth-email').value || "user@boqpro.com";
+      document.getElementById('user-display').innerText = `Logged In: ${emailInput}`;
+      document.getElementById('auth-overlay').style.display = 'none';
+    }
+
+    function toggleAuthMode() {
+      const signin = document.getElementById('signin-box');
+      const signup = document.getElementById('signup-box');
+      if (signin.style.display === 'none') {
+        signin.style.display = 'block'; signup.style.display = 'none';
+      } else {
+        signin.style.display = 'none'; signup.style.display = 'block';
+      }
+    }
+
+    // Modal controls
+    function openAddModal() {
+      updateSubItemOptions();
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function closeAddModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function updateSubItemOptions() {
+      const cat = document.getElementById('modal-category').value;
+      const subSelect = document.getElementById('modal-subitem');
+      subSelect.innerHTML = '';
+      subItemsDatabase[cat].forEach(item => {
+        let opt = document.createElement('option');
+        opt.value = item;
+        opt.innerText = item;
+        subSelect.appendChild(opt);
+      });
+    }
+
+    // Add and Remove items dynamically
+    function confirmAddItem() {
+      itemCount++;
+      const category = document.getElementById('modal-category').value;
+      const subItem = document.getElementById('modal-subitem').value;
+
+      const cardHTML = `
+        <div class="boq-card" id="item-card-${itemCount}">
+          <span class="chapter-badge">${category}</span>
+          <button class="btn-remove" style="float: right;" onclick="removeItem(${itemCount})">Remove</button>
+          <div class="item-header">${subItem}</div>
+          <div class="input-group">
+            <span>Unit:</span>
+            <input list="unit-options" id="unit-${itemCount}" value="m²" placeholder="Select or type unit...">
+          </div>
+          <div class="input-group">
+            <span>Quantity:</span>
+            <input type="number" id="qty-${itemCount}" value="0" oninput="calculateBOQ()">
+          </div>
+          <div class="input-group">
+            <span>Unit Rate ($):</span>
+            <input type="number" id="rate-${itemCount}" value="0.00" oninput="calculateBOQ()">
+          </div>
+          <div class="line-total">
+            <span>Subtotal:</span>
+            <span id="total-${itemCount}">$0.00</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('boq-items-list').insertAdjacentHTML('beforeend', cardHTML);
+      closeAddModal();
+      calculateBOQ();
+    }
+
+    function removeItem(id) {
+      const card = document.getElementById(`item-card-${id}`);
+      if (card) {
+        card.remove();
+        calculateBOQ();
+      }
+    }
+
+    // Recalculate totals
     function calculateBOQ() {
       let subtotal = 0;
+      const cards = document.querySelectorAll('.boq-card');
 
-      for (let i = 1; i <= 3; i++) {
-        // Read values from card view
-        let qty = parseFloat(document.getElementById(`card-qty-${i}`).value) || 0;
-        let rate = parseFloat(document.getElementById(`card-rate-${i}`).value) || 0;
-        let total = qty * rate;
-
+      cards.forEach(card => {
+        const id = card.id.replace('item-card-', '');
+        const qty = parseFloat(document.getElementById(`qty-${id}`)?.value) || 0;
+        const rate = parseFloat(document.getElementById(`rate-${id}`)?.value) || 0;
+        const total = qty * rate;
         subtotal += total;
 
-        // Update row total labels
-        document.getElementById(`card-total-${i}`).innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        document.getElementById(`tbl-total-${i}`).innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const totalElem = document.getElementById(`total-${id}`);
+        if (totalElem) {
+          totalElem.innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+      });
 
-        // Keep table input synchronized with mobile cards
-        document.getElementById(`tbl-qty-${i}`).value = qty;
-        document.getElementById(`tbl-rate-${i}`).value = rate;
-      }
-
-      // Calculate taxes & totals
       let contingency = subtotal * 0.05;
       let vat = (subtotal + contingency) * 0.10;
       let grandTotal = subtotal + contingency + vat;
 
-      // Update Summary DOM
       document.getElementById('summary-subtotal').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       document.getElementById('summary-contingency').innerText = `$${contingency.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       document.getElementById('summary-vat').innerText = `$${vat.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       document.getElementById('summary-grandtotal').innerText = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
-    // Sync input when typing in tablet/desktop table view
-    function syncInputs(index, type) {
-      let val = document.getElementById(`tbl-${type}-${index}`).value;
-      document.getElementById(`card-${type}-${index}`).value = val;
-      calculateBOQ();
-    }
-
-    // Initial calculation on page load
     window.onload = calculateBOQ;
   </script>
-
 </body>
 </html>
