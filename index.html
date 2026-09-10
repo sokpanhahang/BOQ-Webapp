@@ -3,32 +3,289 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOQ Preview</title>
+  <title>Interactive BOQ Web App</title>
   <style>
-    body { font-family: sans-serif; padding: 12px; background: #f8fafc; margin: 0; }
-    .boq-card { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
-    .header { font-weight: bold; font-size: 16px; color: #0f172a; margin-bottom: 8px; }
-    .row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
-    .total { font-weight: bold; color: #16a34a; font-size: 16px; border-top: 1px solid #e2e8f0; pt: 8px; }
+    :root {
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --success: #16a34a;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+    }
+
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); margin: 0; padding: 12px; color: #334155; }
+
+    .app-header {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .app-title { margin: 0; font-size: 18px; font-weight: 700; }
+    .badge { background: var(--success); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+
+    /* WBS Chapter Styling */
+    .chapter-title {
+      background: #e2e8f0;
+      padding: 10px 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      margin: 16px 0 10px 0;
+      color: var(--primary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Mobile Card Layout */
+    .boq-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .item-header { font-weight: 600; color: var(--primary); margin-bottom: 10px; font-size: 15px; }
+    .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    
+    input[type="number"] {
+      width: 100px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 600;
+      background: #f1f5f9;
+    }
+    input[type="number"]:focus { outline: 2px solid var(--accent); background: #fff; }
+
+    .line-total {
+      font-weight: bold;
+      color: var(--success);
+      font-size: 15px;
+      border-top: 1px dashed var(--border);
+      padding-top: 8px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Summary Section */
+    .summary-box {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .grand-total { font-size: 18px; font-weight: bold; border-top: 1px solid #334155; padding-top: 10px; color: #4ade80; }
+
+    /* Desktop/Tablet Table Layout */
+    .table-container { display: none; overflow-x: auto; background: white; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    th { background: #f1f5f9; font-weight: 600; }
+
+    @media (min-width: 768px) {
+      .card-view { display: none; }
+      .table-container { display: block; }
+    }
   </style>
 </head>
 <body>
 
-  <h2 style="color: #0f172a; font-size: 18px;">Embassy Renovation — Mobile BOQ</h2>
-
-  <div class="boq-card">
-    <div class="header">1.1 Site Excavation (Machine)</div>
-    <div class="row"><span>Quantity:</span> <strong>450.00 m³</strong></div>
-    <div class="row"><span>Unit Rate:</span> <strong>$4.50</strong></div>
-    <div class="row total"><span>Total Amount:</span> <span>$2,025.00</span></div>
+  <!-- App Bar -->
+  <div class="app-header">
+    <div>
+      <h1 class="app-title">Embassy Renovation — BOQ Engine</h1>
+      <small style="opacity: 0.8">Interactive Test Environment</small>
+    </div>
+    <span class="badge">Live Sync Active</span>
   </div>
 
-  <div class="boq-card">
-    <div class="header">1.2 Reinforced Concrete Footings</div>
-    <div class="row"><span>Quantity:</span> <strong>85.00 m³</strong></div>
-    <div class="row"><span>Unit Rate:</span> <strong>$209.50</strong></div>
-    <div class="row total"><span>Total Amount:</span> <span>$17,807.50</span></div>
+  <!-- Mobile Card View (Smartphone) -->
+  <div class="card-view">
+    <div class="chapter-title">
+      <span>1.0 Substructure & Foundation</span>
+    </div>
+
+    <!-- Item 1 -->
+    <div class="boq-card">
+      <div class="item-header">1.1 Site Excavation (Machine)</div>
+      <div class="input-group">
+        <span>Unit:</span> <strong>m³</strong>
+      </div>
+      <div class="input-group">
+        <span>Quantity:</span>
+        <input type="number" id="card-qty-1" value="450" oninput="calculateBOQ()">
+      </div>
+      <div class="input-group">
+        <span>Unit Rate ($):</span>
+        <input type="number" id="card-rate-1" value="4.50" step="0.5" oninput="calculateBOQ()">
+      </div>
+      <div class="line-total">
+        <span>Total:</span>
+        <span id="card-total-1">$0.00</span>
+      </div>
+    </div>
+
+    <!-- Item 2 -->
+    <div class="boq-card">
+      <div class="item-header">1.2 Lean Concrete (100mm, C15/20)</div>
+      <div class="input-group">
+        <span>Unit:</span> <strong>m²</strong>
+      </div>
+      <div class="input-group">
+        <span>Quantity:</span>
+        <input type="number" id="card-qty-2" value="280" oninput="calculateBOQ()">
+      </div>
+      <div class="input-group">
+        <span>Unit Rate ($):</span>
+        <input type="number" id="card-rate-2" value="15.50" step="0.5" oninput="calculateBOQ()">
+      </div>
+      <div class="line-total">
+        <span>Total:</span>
+        <span id="card-total-2">$0.00</span>
+      </div>
+    </div>
+
+    <div class="chapter-title">
+      <span>2.0 Architectural Works</span>
+    </div>
+
+    <!-- Item 3 -->
+    <div class="boq-card">
+      <div class="item-header">2.1 Polished Porcelain Tiles (60x60)</div>
+      <div class="input-group">
+        <span>Unit:</span> <strong>m²</strong>
+      </div>
+      <div class="input-group">
+        <span>Quantity:</span>
+        <input type="number" id="card-qty-3" value="620" oninput="calculateBOQ()">
+      </div>
+      <div class="input-group">
+        <span>Unit Rate ($):</span>
+        <input type="number" id="card-rate-3" value="34.00" step="0.5" oninput="calculateBOQ()">
+      </div>
+      <div class="line-total">
+        <span>Total:</span>
+        <span id="card-total-3">$0.00</span>
+      </div>
+    </div>
   </div>
+
+  <!-- Tablet / Desktop Table View -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Description</th>
+          <th>Unit</th>
+          <th style="text-align: right">Qty</th>
+          <th style="text-align: right">Unit Rate ($)</th>
+          <th style="text-align: right">Total Amount ($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:#f1f5f9; font-weight:bold;"><td colspan="6">1.0 Substructure & Foundation</td></tr>
+        <tr>
+          <td>1.1</td><td>Site Excavation (Machine)</td><td>m³</td>
+          <td align="right"><input type="number" id="tbl-qty-1" value="450" oninput="syncInputs(1, 'qty')"></td>
+          <td align="right"><input type="number" id="tbl-rate-1" value="4.50" step="0.5" oninput="syncInputs(1, 'rate')"></td>
+          <td align="right" id="tbl-total-1" style="font-weight:600">$0.00</td>
+        </tr>
+        <tr>
+          <td>1.2</td><td>Lean Concrete (100mm, C15/20)</td><td>m²</td>
+          <td align="right"><input type="number" id="tbl-qty-2" value="280" oninput="syncInputs(2, 'qty')"></td>
+          <td align="right"><input type="number" id="tbl-rate-2" value="15.50" step="0.5" oninput="syncInputs(2, 'rate')"></td>
+          <td align="right" id="tbl-total-2" style="font-weight:600">$0.00</td>
+        </tr>
+        <tr style="background:#f1f5f9; font-weight:bold;"><td colspan="6">2.0 Architectural Works</td></tr>
+        <tr>
+          <td>2.1</td><td>Polished Porcelain Tiles (60x60)</td><td>m²</td>
+          <td align="right"><input type="number" id="tbl-qty-3" value="620" oninput="syncInputs(3, 'qty')"></td>
+          <td align="right"><input type="number" id="tbl-rate-3" value="34.00" step="0.5" oninput="syncInputs(3, 'rate')"></td>
+          <td align="right" id="tbl-total-3" style="font-weight:600">$0.00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary Total Card -->
+  <div class="summary-box">
+    <div class="summary-row">
+      <span>Sub-Total:</span>
+      <span id="summary-subtotal">$0.00</span>
+    </div>
+    <div class="summary-row">
+      <span>Contingency (5%):</span>
+      <span id="summary-contingency">$0.00</span>
+    </div>
+    <div class="summary-row">
+      <span>VAT (10%):</span>
+      <span id="summary-vat">$0.00</span>
+    </div>
+    <div class="summary-row grand-total">
+      <span>GRAND TOTAL:</span>
+      <span id="summary-grandtotal">$0.00</span>
+    </div>
+  </div>
+
+  <!-- JavaScript Calculation Engine -->
+  <script>
+    function calculateBOQ() {
+      let subtotal = 0;
+
+      for (let i = 1; i <= 3; i++) {
+        // Read values from card view
+        let qty = parseFloat(document.getElementById(`card-qty-${i}`).value) || 0;
+        let rate = parseFloat(document.getElementById(`card-rate-${i}`).value) || 0;
+        let total = qty * rate;
+
+        subtotal += total;
+
+        // Update row total labels
+        document.getElementById(`card-total-${i}`).innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById(`tbl-total-${i}`).innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Keep table input synchronized with mobile cards
+        document.getElementById(`tbl-qty-${i}`).value = qty;
+        document.getElementById(`tbl-rate-${i}`).value = rate;
+      }
+
+      // Calculate taxes & totals
+      let contingency = subtotal * 0.05;
+      let vat = (subtotal + contingency) * 0.10;
+      let grandTotal = subtotal + contingency + vat;
+
+      // Update Summary DOM
+      document.getElementById('summary-subtotal').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summary-contingency').innerText = `$${contingency.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summary-vat').innerText = `$${vat.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('summary-grandtotal').innerText = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+
+    // Sync input when typing in tablet/desktop table view
+    function syncInputs(index, type) {
+      let val = document.getElementById(`tbl-${type}-${index}`).value;
+      document.getElementById(`card-${type}-${index}`).value = val;
+      calculateBOQ();
+    }
+
+    // Initial calculation on page load
+    window.onload = calculateBOQ;
+  </script>
 
 </body>
 </html>
