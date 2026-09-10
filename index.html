@@ -3,14 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Green BOQ Pro — Excel Grid Engine</title>
+  <title>Green BOQ Pro — Excel Engine</title>
+  <!-- SheetJS Library for Excel Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
     :root {
       --primary: #064e3b;       /* Deep Emerald Green */
       --primary-light: #059669; /* Bright Emerald Green */
       --accent: #10b981;        /* Light Accent Green */
       --bg-light: #f0fdf4;      /* Mint Tinted White */
-      --card-bg: #ffffff;
       --text-dark: #0f172a;
       --border: #a7f3d0;
       --danger: #ef4444;
@@ -19,7 +21,7 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-light); margin: 0; padding: 12px; color: var(--text-dark); }
 
-    /* 3. Authentication Overlay */
+    /* Authentication Overlay */
     #auth-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(6, 78, 59, 0.95);
@@ -44,11 +46,12 @@
     .btn-logout { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
     /* Action Toolbar */
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; }
-    .btn-add { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-    .btn-add:hover { background: var(--primary); }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; flex-wrap: wrap; }
+    .btn-action { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+    .btn-export { background: #0284c7; }
+    .btn-action:hover { opacity: 0.9; }
 
-    /* 1. Excel Grid Table Styling */
+    /* Excel Grid Table Styling */
     .excel-container {
       background: white; border: 1px solid var(--border); border-radius: 8px;
       overflow-x: auto; box-shadow: 0 2px 6px rgba(6, 78, 59, 0.05); margin-bottom: 20px;
@@ -57,7 +60,7 @@
     table.excel-grid th { background: #d1fae5; color: var(--primary); padding: 10px; border: 1px solid var(--border); font-weight: bold; }
     table.excel-grid td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; }
 
-    /* 2. Category Section Separator Row */
+    /* Category Section Separator Row */
     tr.category-header-row td {
       background: var(--primary); color: white; font-weight: bold; font-size: 15px; padding: 10px;
     }
@@ -71,6 +74,13 @@
       border-color: var(--primary-light); background: #f0fdf4; outline: none;
     }
     input.excel-text { text-align: left; }
+
+    /* Remark Field Input */
+    input.remark-input {
+      width: 100%; margin-top: 4px; padding: 4px 6px; font-size: 12px;
+      border: 1px dashed #cbd5e1; border-radius: 4px; color: #475569; background: #f8fafc;
+    }
+    input.remark-input:focus { border-color: var(--primary-light); background: #ffffff; outline: none; }
 
     .btn-remove { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
@@ -90,7 +100,36 @@
 </head>
 <body>
 
-  <!-- Dropdown List for Customizable Units -->
+  <!-- FIREBASE INTEGRATION MODULE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC4hWM0gh-CaDDuKE5rV2bP4JG8VcsY-aM",
+      authDomain: "boq-build-app.firebaseapp.com",
+      projectId: "boq-build-app",
+      storageBucket: "boq-build-app.firebasestorage.app",
+      messagingSenderId: "1025455407739",
+      appId: "1:1025455407739:web:70d01189d976ba3ca718de",
+      measurementId: "G-8KS68FXEJC"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // Initialize Analytics safely
+    isSupported().then(supported => {
+      if (supported) {
+        const analytics = getAnalytics(app);
+      }
+    });
+
+    // Expose app instance globally
+    window.firebaseApp = app;
+  </script>
+
+  <!-- Dropdown List for Units -->
   <datalist id="unit-options">
     <option value="m²"></option>
     <option value="m³"></option>
@@ -102,21 +141,21 @@
     <option value="Pcs"></option>
   </datalist>
 
-  <!-- 3. AUTHENTICATION OVERLAY WITH SIGN IN / SIGN UP -->
+  <!-- AUTHENTICATION OVERLAY -->
   <div id="auth-overlay">
     <div class="auth-card" id="signin-box">
       <h2>Sign In — BOQ Engine</h2>
-      <input type="text" class="auth-input" id="auth-email" placeholder="Email / Username">
+      <input type="text" class="auth-input" id="auth-name-in" placeholder="User Name (e.g., SOKPANHA)">
       <input type="password" class="auth-input" placeholder="Password">
-      <button class="btn-auth" onclick="handleAuth()">Sign In</button>
+      <button class="btn-auth" onclick="handleAuth('in')">Sign In</button>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Don't have an account? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign Up</a></p>
     </div>
     <div class="auth-card" id="signup-box" style="display:none;">
       <h2>Create Account</h2>
-      <input type="text" class="auth-input" placeholder="Full Name">
+      <input type="text" class="auth-input" id="auth-name-up" placeholder="User Name (e.g., SOKPANHA)">
       <input type="email" class="auth-input" placeholder="Email">
       <input type="password" class="auth-input" placeholder="Password">
-      <button class="btn-auth" onclick="handleAuth()">Sign Up</button>
+      <button class="btn-auth" onclick="handleAuth('up')">Sign Up</button>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Already registered? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign In</a></p>
     </div>
   </div>
@@ -129,45 +168,44 @@
     </div>
     <div class="user-area">
       <span class="user-badge" id="user-display">Logged In: Guest</span>
-      <!-- 3. LOG OUT BUTTON -->
       <button class="btn-logout" onclick="handleLogout()">Log Out</button>
     </div>
   </div>
 
   <div class="toolbar">
-    <button class="btn-add" onclick="openAddModal()">+ Add Item / Custom Item</button>
-    <span style="font-size: 12px; color: var(--primary-light); font-weight: bold;">Categorized Excel View</span>
+    <button class="btn-action" onclick="openAddModal()">+ Add Item / Custom Item</button>
+    <button class="btn-action btn-export" onclick="exportToExcel()">📊 Export to Excel (.xlsx)</button>
   </div>
 
-  <!-- 1. EXCEL SPREADSHEET FORM -->
+  <!-- EXCEL SPREADSHEET FORM -->
   <div class="excel-container">
-    <table class="excel-grid">
+    <table class="excel-grid" id="boq-grid-table">
       <thead>
         <tr>
-          <th style="width: 60px;">No.</th>
-          <th>Item Description</th>
-          <th style="width: 110px;">Unit</th>
-          <th style="width: 110px; text-align: right;">Qty</th>
-          <th style="width: 130px; text-align: right;">Unit Rate ($)</th>
-          <th style="width: 140px; text-align: right;">Total ($)</th>
-          <th style="width: 70px; text-align: center;">Action</th>
+          <th style="width: 70px;">No.</th>
+          <th>Item Description & Remark</th>
+          <th style="width: 100px;">Unit</th>
+          <th style="width: 100px; text-align: right;">Qty</th>
+          <th style="width: 120px; text-align: right;">Unit Rate ($)</th>
+          <th style="width: 130px; text-align: right;">Total ($)</th>
+          <th style="width: 60px; text-align: center;">Action</th>
         </tr>
       </thead>
-      
-      <!-- 2. CATEGORY SECTIONS -->
-      <tbody id="sec-structure">
+
+      <!-- CATEGORY SECTIONS WITH PREFIX CODES -->
+      <tbody id="sec-structure" data-prefix="1">
         <tr class="category-header-row">
           <td colspan="7">1.0 STRUCTURE WORKS</td>
         </tr>
       </tbody>
 
-      <tbody id="sec-architectural">
+      <tbody id="sec-architectural" data-prefix="2">
         <tr class="category-header-row">
           <td colspan="7">2.0 ARCHITECTURAL WORKS</td>
         </tr>
       </tbody>
 
-      <tbody id="sec-mep">
+      <tbody id="sec-mep" data-prefix="3">
         <tr class="category-header-row">
           <td colspan="7">3.0 MEP WORKS (Mechanical, Electrical, Plumbing)</td>
         </tr>
@@ -175,11 +213,11 @@
     </table>
   </div>
 
-  <!-- 5. MODAL PANEL FOR ADDING CATALOG OR CUSTOM ITEMS -->
+  <!-- MODAL PANEL FOR ADDING CATALOG OR CUSTOM ITEMS -->
   <div id="modal-overlay">
     <div class="modal-box">
       <h3 style="margin-top:0; color: var(--primary);">Add BOQ Item</h3>
-      
+
       <label style="font-size:12px; font-weight:bold;">1. Select Work Category:</label>
       <select class="modal-select" id="modal-category" onchange="updateSubItemOptions()">
         <option value="Structure Works">1.0 Structure Works</option>
@@ -193,7 +231,7 @@
       </select>
 
       <div id="custom-item-container" style="display:none;">
-        <label style="font-size:12px; font-weight:bold; color: var(--primary-light);">5. Type Custom Item Description:</label>
+        <label style="font-size:12px; font-weight:bold; color: var(--primary-light);">Type Custom Item Description:</label>
         <input type="text" class="modal-input" id="custom-item-name" placeholder="e.g., Decorative Timber Wall Slats">
       </div>
 
@@ -225,9 +263,14 @@
   </div>
 
   <script>
-    let itemCounter = 0;
+    let rowCounter = 0;
 
-    // 4. EXTENDED CATALOG OF ARCHITECTURAL, STRUCTURE, & MEP ITEMS
+    const categoryCounters = {
+      "Structure Works": 0,
+      "Architectural Works": 0,
+      "MEP Works": 0
+    };
+
     const catalogDatabase = {
       "Structure Works": [
         "Site Excavation & Backfilling", "Lean Concrete C15/20 (100mm)", "Reinforced Concrete Footings", 
@@ -247,10 +290,15 @@
       ]
     };
 
-    // Auth functions
-    function handleAuth() {
-      const email = document.getElementById('auth-email').value || "user@boqpro.com";
-      document.getElementById('user-display').innerText = `Logged In: ${email}`;
+    function handleAuth(type) {
+      let userName = "";
+      if (type === 'in') {
+        userName = document.getElementById('auth-name-in').value;
+      } else {
+        userName = document.getElementById('auth-name-up').value;
+      }
+      userName = userName.trim() || "User";
+      document.getElementById('user-display').innerText = `Logged In: ${userName}`;
       document.getElementById('auth-overlay').style.display = 'none';
     }
 
@@ -265,7 +313,6 @@
       signup.style.display = (signup.style.display === 'none') ? 'block' : 'none';
     }
 
-    // Modal & Catalog handling
     function openAddModal() {
       updateSubItemOptions();
       document.getElementById('modal-overlay').style.display = 'flex';
@@ -279,7 +326,7 @@
       const cat = document.getElementById('modal-category').value;
       const subSelect = document.getElementById('modal-subitem');
       subSelect.innerHTML = '';
-      
+
       catalogDatabase[cat].forEach(item => {
         let opt = document.createElement('option');
         opt.value = item;
@@ -287,7 +334,6 @@
         subSelect.appendChild(opt);
       });
 
-      // 5. Option for custom items
       let customOpt = document.createElement('option');
       customOpt.value = "CUSTOM_ITEM";
       customOpt.innerText = "+ Custom Item (Type manually...)";
@@ -301,31 +347,37 @@
       document.getElementById('custom-item-container').style.display = (val === 'CUSTOM_ITEM') ? 'block' : 'none';
     }
 
-    // Add Item to Excel Table
     function confirmAddItem() {
-      itemCounter++;
+      rowCounter++;
       const category = document.getElementById('modal-category').value;
       const subSelectValue = document.getElementById('modal-subitem').value;
-      
+
       let itemDescription = subSelectValue;
       if (subSelectValue === 'CUSTOM_ITEM') {
-        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${itemCounter}`;
+        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${rowCounter}`;
       }
 
-      // Map to correct section body
+      categoryCounters[category]++;
+      const catIndex = (category === "Structure Works") ? 1 : (category === "Architectural Works") ? 2 : 3;
+      const subIndex = String(categoryCounters[category]).padStart(2, '0');
+      const itemSeriesNo = `${catIndex}.${subIndex}`;
+
       let targetSectionId = "sec-architectural";
       if (category === "Structure Works") targetSectionId = "sec-structure";
       if (category === "MEP Works") targetSectionId = "sec-mep";
 
       const rowHTML = `
-        <tr id="grid-row-${itemCounter}">
-          <td align="center">${itemCounter}</td>
-          <td><input type="text" class="excel-input excel-text" id="desc-${itemCounter}" value="${itemDescription}"></td>
-          <td><input list="unit-options" class="excel-input" id="unit-${itemCounter}" value="m²"></td>
-          <td><input type="number" class="excel-input" id="qty-${itemCounter}" value="100" oninput="calculateBOQ()"></td>
-          <td><input type="number" class="excel-input" id="rate-${itemCounter}" value="25.00" oninput="calculateBOQ()"></td>
-          <td align="right" style="font-weight:bold; color: var(--primary-light);" id="total-${itemCounter}">$0.00</td>
-          <td align="center"><button class="btn-remove" onclick="removeGridRow(${itemCounter})">X</button></td>
+        <tr id="grid-row-${rowCounter}" class="item-data-row">
+          <td align="center" style="font-weight:bold; color: var(--primary);">${itemSeriesNo}</td>
+          <td>
+            <input type="text" class="excel-input excel-text item-desc" id="desc-${rowCounter}" value="${itemDescription}">
+            <input type="text" class="remark-input item-remark" id="remark-${rowCounter}" placeholder="+ Add Remark / Specification...">
+          </td>
+          <td><input list="unit-options" class="excel-input item-unit" id="unit-${rowCounter}" value="m²"></td>
+          <td><input type="number" class="excel-input item-qty" id="qty-${rowCounter}" placeholder="0" value="" oninput="calculateBOQ()"></td>
+          <td><input type="number" class="excel-input item-rate" id="rate-${rowCounter}" value="25.00" oninput="calculateBOQ()"></td>
+          <td align="right" style="font-weight:bold; color: var(--primary-light);" class="item-total" id="total-${rowCounter}">$0.00</td>
+          <td align="center"><button class="btn-remove" onclick="removeGridRow(${rowCounter})">X</button></td>
         </tr>
       `;
 
@@ -342,24 +394,24 @@
       }
     }
 
-    // Recalculate totals
     function calculateBOQ() {
       let subtotal = 0;
+      const dataRows = document.querySelectorAll('.item-data-row');
 
-      for (let i = 1; i <= itemCounter; i++) {
-        const qtyElem = document.getElementById(`qty-${i}`);
-        const rateElem = document.getElementById(`rate-${i}`);
-        const totalElem = document.getElementById(`total-${i}`);
+      dataRows.forEach(row => {
+        const qtyInput = row.querySelector('.item-qty');
+        const rateInput = row.querySelector('.item-rate');
+        const totalElem = row.querySelector('.item-total');
 
-        if (qtyElem && rateElem && totalElem) {
-          const qty = parseFloat(qtyElem.value) || 0;
-          const rate = parseFloat(rateElem.value) || 0;
+        if (qtyInput && rateInput && totalElem) {
+          const qty = parseFloat(qtyInput.value) || 0;
+          const rate = parseFloat(rateInput.value) || 0;
           const total = qty * rate;
           subtotal += total;
 
           totalElem.innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
-      }
+      });
 
       let contingency = subtotal * 0.05;
       let vat = (subtotal + contingency) * 0.10;
@@ -371,9 +423,51 @@
       document.getElementById('summary-grandtotal').innerText = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
-    // Initialize with 2 sample items
+    function exportToExcel() {
+      const exportData = [];
+      exportData.push(["No.", "Item Description", "Remark", "Unit", "Qty", "Unit Rate ($)", "Total Amount ($)"]);
+
+      const sections = [
+        { id: "sec-structure", title: "1.0 STRUCTURE WORKS" },
+        { id: "sec-architectural", title: "2.0 ARCHITECTURAL WORKS" },
+        { id: "sec-mep", title: "3.0 MEP WORKS" }
+      ];
+
+      sections.forEach(sec => {
+        const secElem = document.getElementById(sec.id);
+        const rows = secElem.querySelectorAll('.item-data-row');
+
+        if (rows.length > 0) {
+          exportData.push(["", sec.title, "", "", "", "", ""]);
+
+          rows.forEach(row => {
+            const no = row.cells[0].innerText.trim();
+            const desc = row.querySelector('.item-desc').value;
+            const remark = row.querySelector('.item-remark').value;
+            const unit = row.querySelector('.item-unit').value;
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+            const total = qty * rate;
+
+            exportData.push([no, desc, remark, unit, qty, rate, total]);
+          });
+        }
+      });
+
+      const subtotalStr = document.getElementById('summary-subtotal').innerText;
+      const grandTotalStr = document.getElementById('summary-grandtotal').innerText;
+      exportData.push([]);
+      exportData.push(["", "SUB-TOTAL", "", "", "", "", subtotalStr]);
+      exportData.push(["", "GRAND TOTAL (incl. Contingency & VAT)", "", "", "", "", grandTotalStr]);
+
+      const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "BOQ_Summary");
+      XLSX.writeFile(workbook, "BOQ_Project_Export.xlsx");
+    }
+
     window.onload = function() {
-      confirmAddItem(); // Default sample 1
+      confirmAddItem();
     };
   </script>
 </body>
