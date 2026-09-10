@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Green BOQ Pro Engine</title>
+  <title>Green BOQ Pro — Excel Grid Engine</title>
   <style>
     :root {
-      --primary: #064e3b;      /* Deep Emerald Green */
-      --primary-light: #059669;/* Bright Emerald Green */
-      --accent: #10b981;       /* Light Accent Green */
-      --bg-light: #f0fdf4;     /* Mint Tinted White */
+      --primary: #064e3b;       /* Deep Emerald Green */
+      --primary-light: #059669; /* Bright Emerald Green */
+      --accent: #10b981;        /* Light Accent Green */
+      --bg-light: #f0fdf4;      /* Mint Tinted White */
       --card-bg: #ffffff;
       --text-dark: #0f172a;
       --border: #a7f3d0;
@@ -19,7 +19,7 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-light); margin: 0; padding: 12px; color: var(--text-dark); }
 
-    /* Auth Screens Overlay */
+    /* 3. Authentication Overlay */
     #auth-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(6, 78, 59, 0.95);
@@ -33,45 +33,54 @@
     .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
     .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-    /* Top Navigation Header */
+    /* App Header Bar */
     .app-header {
-      background: var(--primary); color: white; padding: 16px; border-radius: 8px;
+      background: var(--primary); color: white; padding: 14px 20px; border-radius: 8px;
       display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
     .app-title { margin: 0; font-size: 18px; font-weight: 700; }
+    .user-area { display: flex; align-items: center; gap: 10px; }
     .user-badge { background: #022c22; color: #a7f3d0; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .btn-logout { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
     /* Action Toolbar */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; }
     .btn-add { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn-add:hover { background: var(--primary); }
 
-    /* Cards & Containers */
-    .boq-card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 14px; margin-bottom: 12px; position: relative;
-      box-shadow: 0 2px 4px rgba(6, 78, 59, 0.05);
+    /* 1. Excel Grid Table Styling */
+    .excel-container {
+      background: white; border: 1px solid var(--border); border-radius: 8px;
+      overflow-x: auto; box-shadow: 0 2px 6px rgba(6, 78, 59, 0.05); margin-bottom: 20px;
     }
-    .chapter-badge { background: #d1fae5; color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 6px; }
-    .item-header { font-weight: 600; color: var(--primary); margin-bottom: 10px; font-size: 15px; }
-    .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-    
-    input[type="number"], input[list] {
-      width: 120px; padding: 6px 8px; border: 1px solid var(--border);
-      border-radius: 6px; text-align: right; font-size: 14px; font-weight: 600; background: #fafafa;
+    table.excel-grid { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    table.excel-grid th { background: #d1fae5; color: var(--primary); padding: 10px; border: 1px solid var(--border); font-weight: bold; }
+    table.excel-grid td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; }
+
+    /* 2. Category Section Separator Row */
+    tr.category-header-row td {
+      background: var(--primary); color: white; font-weight: bold; font-size: 15px; padding: 10px;
     }
+
+    /* Editable Input Cells */
+    input.excel-input {
+      width: 100%; padding: 6px; border: 1px solid transparent; border-radius: 4px;
+      font-size: 14px; background: transparent; text-align: right; font-weight: 500;
+    }
+    input.excel-input:hover, input.excel-input:focus {
+      border-color: var(--primary-light); background: #f0fdf4; outline: none;
+    }
+    input.excel-text { text-align: left; }
 
     .btn-remove { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-    .line-total { font-weight: bold; color: var(--primary-light); font-size: 15px; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px; display: flex; justify-content: space-between; }
-
-    /* Modal Panel for Adding Items */
+    /* Modal for Add Items */
     #modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 500;
     }
-    .modal-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; border-top: 6px solid var(--primary-light); }
-    .modal-select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .modal-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 420px; border-top: 6px solid var(--primary-light); }
+    .modal-select, .modal-input { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
     /* Summary Dashboard */
     .summary-box { background: var(--primary); color: white; padding: 16px; border-radius: 8px; margin-top: 20px; }
@@ -81,7 +90,7 @@
 </head>
 <body>
 
-  <!-- Shared Dropdown List for Customizable Units -->
+  <!-- Dropdown List for Customizable Units -->
   <datalist id="unit-options">
     <option value="m²"></option>
     <option value="m³"></option>
@@ -93,7 +102,7 @@
     <option value="Pcs"></option>
   </datalist>
 
-  <!-- 1. SIGN IN / SIGN UP AUTHENTICATION MODAL -->
+  <!-- 3. AUTHENTICATION OVERLAY WITH SIGN IN / SIGN UP -->
   <div id="auth-overlay">
     <div class="auth-card" id="signin-box">
       <h2>Sign In — BOQ Engine</h2>
@@ -112,69 +121,85 @@
     </div>
   </div>
 
-  <!-- MAIN BOQ APPLICATION -->
+  <!-- MAIN APP HEADER -->
   <div class="app-header">
     <div>
       <h1 class="app-title">BOQ Builder Engine</h1>
-      <small style="opacity: 0.9;">Green Theme Edition</small>
+      <small style="opacity: 0.9;">Green Excel Grid Edition</small>
     </div>
-    <span class="user-badge" id="user-display">Logged In: Guest</span>
+    <div class="user-area">
+      <span class="user-badge" id="user-display">Logged In: Guest</span>
+      <!-- 3. LOG OUT BUTTON -->
+      <button class="btn-logout" onclick="handleLogout()">Log Out</button>
+    </div>
   </div>
 
   <div class="toolbar">
-    <!-- 3. ADD ITEM BUTTON -->
-    <button class="btn-add" onclick="openAddModal()">+ Add New Item</button>
-    <span style="font-size: 12px; color: var(--primary-light); font-weight: bold;">Emerald-White Mode</span>
+    <button class="btn-add" onclick="openAddModal()">+ Add Item / Custom Item</button>
+    <span style="font-size: 12px; color: var(--primary-light); font-weight: bold;">Categorized Excel View</span>
   </div>
 
-  <!-- BOQ Items Container -->
-  <div id="boq-items-list">
-    <!-- Pre-populated default item -->
-    <div class="boq-card" id="item-card-1">
-      <span class="chapter-badge">Architectural Works</span>
-      <button class="btn-remove" style="float: right;" onclick="removeItem(1)">Remove</button>
-      <div class="item-header">Floor Tiles (60x60 Porcelain)</div>
+  <!-- 1. EXCEL SPREADSHEET FORM -->
+  <div class="excel-container">
+    <table class="excel-grid">
+      <thead>
+        <tr>
+          <th style="width: 60px;">No.</th>
+          <th>Item Description</th>
+          <th style="width: 110px;">Unit</th>
+          <th style="width: 110px; text-align: right;">Qty</th>
+          <th style="width: 130px; text-align: right;">Unit Rate ($)</th>
+          <th style="width: 140px; text-align: right;">Total ($)</th>
+          <th style="width: 70px; text-align: center;">Action</th>
+        </tr>
+      </thead>
       
-      <!-- 4. CUSTOMIZABLE / WRITABLE UNIT SELECTOR -->
-      <div class="input-group">
-        <span>Unit:</span>
-        <input list="unit-options" id="unit-1" value="m²" placeholder="Select or type unit...">
-      </div>
-      <div class="input-group">
-        <span>Quantity:</span>
-        <input type="number" id="qty-1" value="100" oninput="calculateBOQ()">
-      </div>
-      <div class="input-group">
-        <span>Unit Rate ($):</span>
-        <input type="number" id="rate-1" value="25.00" oninput="calculateBOQ()">
-      </div>
-      <div class="line-total">
-        <span>Subtotal:</span>
-        <span id="total-1">$2,500.00</span>
-      </div>
-    </div>
+      <!-- 2. CATEGORY SECTIONS -->
+      <tbody id="sec-structure">
+        <tr class="category-header-row">
+          <td colspan="7">1.0 STRUCTURE WORKS</td>
+        </tr>
+      </tbody>
+
+      <tbody id="sec-architectural">
+        <tr class="category-header-row">
+          <td colspan="7">2.0 ARCHITECTURAL WORKS</td>
+        </tr>
+      </tbody>
+
+      <tbody id="sec-mep">
+        <tr class="category-header-row">
+          <td colspan="7">3.0 MEP WORKS (Mechanical, Electrical, Plumbing)</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-  <!-- 3. ADD ITEM MODAL PANEL -->
+  <!-- 5. MODAL PANEL FOR ADDING CATALOG OR CUSTOM ITEMS -->
   <div id="modal-overlay">
     <div class="modal-box">
-      <h3 style="margin-top:0; color: var(--primary);">Add Item to BOQ</h3>
+      <h3 style="margin-top:0; color: var(--primary);">Add BOQ Item</h3>
       
-      <label style="font-size:12px; font-weight:bold;">1. Select Category:</label>
+      <label style="font-size:12px; font-weight:bold;">1. Select Work Category:</label>
       <select class="modal-select" id="modal-category" onchange="updateSubItemOptions()">
         <option value="Structure Works">1.0 Structure Works</option>
         <option value="Architectural Works" selected>2.0 Architectural Works</option>
         <option value="MEP Works">3.0 MEP Works</option>
       </select>
 
-      <label style="font-size:12px; font-weight:bold;">2. Select Sub-Item:</label>
-      <select class="modal-select" id="modal-subitem">
-        <!-- Dynamically populated -->
+      <label style="font-size:12px; font-weight:bold;">2. Select Standard Item OR Type Custom Item:</label>
+      <select class="modal-select" id="modal-subitem" onchange="toggleCustomInput()">
+        <!-- Populated dynamically -->
       </select>
+
+      <div id="custom-item-container" style="display:none;">
+        <label style="font-size:12px; font-weight:bold; color: var(--primary-light);">5. Type Custom Item Description:</label>
+        <input type="text" class="modal-input" id="custom-item-name" placeholder="e.g., Decorative Timber Wall Slats">
+      </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button onclick="closeAddModal()" style="padding: 8px 12px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-        <button onclick="confirmAddItem()" style="padding: 8px 12px; background: var(--primary-light); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Add Item</button>
+        <button onclick="confirmAddItem()" style="padding: 8px 12px; background: var(--primary-light); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Add to Grid</button>
       </div>
     </div>
   </div>
@@ -183,51 +208,64 @@
   <div class="summary-box">
     <div class="summary-row">
       <span>Sub-Total:</span>
-      <span id="summary-subtotal">$2,500.00</span>
+      <span id="summary-subtotal">$0.00</span>
     </div>
     <div class="summary-row">
       <span>Contingency (5%):</span>
-      <span id="summary-contingency">$125.00</span>
+      <span id="summary-contingency">$0.00</span>
     </div>
     <div class="summary-row">
       <span>VAT (10%):</span>
-      <span id="summary-vat">$262.50</span>
+      <span id="summary-vat">$0.00</span>
     </div>
     <div class="summary-row grand-total">
       <span>GRAND TOTAL:</span>
-      <span id="summary-grandtotal">$2,887.50</span>
+      <span id="summary-grandtotal">$0.00</span>
     </div>
   </div>
 
-  <!-- JAVASCRIPT ENGINE -->
   <script>
-    let itemCount = 1;
+    let itemCounter = 0;
 
-    // Sub-items database based on category choice
-    const subItemsDatabase = {
-      "Structure Works": ["Site Excavation", "Lean Concrete C15/20", "Reinforcement Rebar (Steel)", "Formwork & Shoring", "Concrete Footings"],
-      "Architectural Works": ["Wall Partition (Gypsum)", "Wall Painting (Emulsion)", "Floor Tiles (Porcelain)", "Suspended Ceiling Board", "Aluminum Fixed Glazing"],
-      "MEP Works": ["Electrical Wiring & Conduit", "LED Lighting Fixtures", "Sanitary Pipes (PPR/PVC)", "Air Conditioning Unit", "Distribution Panel Board"]
+    // 4. EXTENDED CATALOG OF ARCHITECTURAL, STRUCTURE, & MEP ITEMS
+    const catalogDatabase = {
+      "Structure Works": [
+        "Site Excavation & Backfilling", "Lean Concrete C15/20 (100mm)", "Reinforced Concrete Footings", 
+        "Reinforcement Rebar (Steel Grade 400)", "Formwork & Shoring Supports", "Concrete Columns & Beams (C30/35)",
+        "Waterproofing Membrane for Footings"
+      ],
+      "Architectural Works": [
+        "Floor Tiles (60x60 Porcelain)", "Wall Tiles (30x60 Ceramic)", "Gypsum Board Wall Partition (Double Sided)",
+        "Wall Plastering (Cement Mortar)", "Internal Wall Painting (Emulsion Paint)", "External Wall Painting (Weather Shield)",
+        "Suspended Gypsum Ceiling Board", "Aluminum Framed Fixed Glazing", "Aluminum Sliding Glass Doors",
+        "Solid Timber Doors & Frame", "Roofing Tiles / Metal Roofing Sheet", "Skirting Board (PVC/Wood)"
+      ],
+      "MEP Works": [
+        "Electrical Wiring & PVC Conduit", "LED Downlight Fixtures", "Distribution Panel Board (MCB/MCCB)",
+        "Sanitary Ware (Water Closet & Wash Basin)", "PPR Water Supply Pipes", "PVC Waste & Drain Water Pipes",
+        "Air Conditioning Split Unit (1.5 HP)", "Exhaust Fan Installation", "Fire Alarm & Smoke Detectors"
+      ]
     };
 
-    // Auth handler
+    // Auth functions
     function handleAuth() {
-      const emailInput = document.getElementById('auth-email').value || "user@boqpro.com";
-      document.getElementById('user-display').innerText = `Logged In: ${emailInput}`;
+      const email = document.getElementById('auth-email').value || "user@boqpro.com";
+      document.getElementById('user-display').innerText = `Logged In: ${email}`;
       document.getElementById('auth-overlay').style.display = 'none';
+    }
+
+    function handleLogout() {
+      document.getElementById('auth-overlay').style.display = 'flex';
     }
 
     function toggleAuthMode() {
       const signin = document.getElementById('signin-box');
       const signup = document.getElementById('signup-box');
-      if (signin.style.display === 'none') {
-        signin.style.display = 'block'; signup.style.display = 'none';
-      } else {
-        signin.style.display = 'none'; signup.style.display = 'block';
-      }
+      signin.style.display = (signin.style.display === 'none') ? 'block' : 'none';
+      signup.style.display = (signup.style.display === 'none') ? 'block' : 'none';
     }
 
-    // Modal controls
+    // Modal & Catalog handling
     function openAddModal() {
       updateSubItemOptions();
       document.getElementById('modal-overlay').style.display = 'flex';
@@ -241,53 +279,65 @@
       const cat = document.getElementById('modal-category').value;
       const subSelect = document.getElementById('modal-subitem');
       subSelect.innerHTML = '';
-      subItemsDatabase[cat].forEach(item => {
+      
+      catalogDatabase[cat].forEach(item => {
         let opt = document.createElement('option');
         opt.value = item;
         opt.innerText = item;
         subSelect.appendChild(opt);
       });
+
+      // 5. Option for custom items
+      let customOpt = document.createElement('option');
+      customOpt.value = "CUSTOM_ITEM";
+      customOpt.innerText = "+ Custom Item (Type manually...)";
+      subSelect.appendChild(customOpt);
+
+      toggleCustomInput();
     }
 
-    // Add and Remove items dynamically
-    function confirmAddItem() {
-      itemCount++;
-      const category = document.getElementById('modal-category').value;
-      const subItem = document.getElementById('modal-subitem').value;
+    function toggleCustomInput() {
+      const val = document.getElementById('modal-subitem').value;
+      document.getElementById('custom-item-container').style.display = (val === 'CUSTOM_ITEM') ? 'block' : 'none';
+    }
 
-      const cardHTML = `
-        <div class="boq-card" id="item-card-${itemCount}">
-          <span class="chapter-badge">${category}</span>
-          <button class="btn-remove" style="float: right;" onclick="removeItem(${itemCount})">Remove</button>
-          <div class="item-header">${subItem}</div>
-          <div class="input-group">
-            <span>Unit:</span>
-            <input list="unit-options" id="unit-${itemCount}" value="m²" placeholder="Select or type unit...">
-          </div>
-          <div class="input-group">
-            <span>Quantity:</span>
-            <input type="number" id="qty-${itemCount}" value="0" oninput="calculateBOQ()">
-          </div>
-          <div class="input-group">
-            <span>Unit Rate ($):</span>
-            <input type="number" id="rate-${itemCount}" value="0.00" oninput="calculateBOQ()">
-          </div>
-          <div class="line-total">
-            <span>Subtotal:</span>
-            <span id="total-${itemCount}">$0.00</span>
-          </div>
-        </div>
+    // Add Item to Excel Table
+    function confirmAddItem() {
+      itemCounter++;
+      const category = document.getElementById('modal-category').value;
+      const subSelectValue = document.getElementById('modal-subitem').value;
+      
+      let itemDescription = subSelectValue;
+      if (subSelectValue === 'CUSTOM_ITEM') {
+        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${itemCounter}`;
+      }
+
+      // Map to correct section body
+      let targetSectionId = "sec-architectural";
+      if (category === "Structure Works") targetSectionId = "sec-structure";
+      if (category === "MEP Works") targetSectionId = "sec-mep";
+
+      const rowHTML = `
+        <tr id="grid-row-${itemCounter}">
+          <td align="center">${itemCounter}</td>
+          <td><input type="text" class="excel-input excel-text" id="desc-${itemCounter}" value="${itemDescription}"></td>
+          <td><input list="unit-options" class="excel-input" id="unit-${itemCounter}" value="m²"></td>
+          <td><input type="number" class="excel-input" id="qty-${itemCounter}" value="100" oninput="calculateBOQ()"></td>
+          <td><input type="number" class="excel-input" id="rate-${itemCounter}" value="25.00" oninput="calculateBOQ()"></td>
+          <td align="right" style="font-weight:bold; color: var(--primary-light);" id="total-${itemCounter}">$0.00</td>
+          <td align="center"><button class="btn-remove" onclick="removeGridRow(${itemCounter})">X</button></td>
+        </tr>
       `;
 
-      document.getElementById('boq-items-list').insertAdjacentHTML('beforeend', cardHTML);
+      document.getElementById(targetSectionId).insertAdjacentHTML('beforeend', rowHTML);
       closeAddModal();
       calculateBOQ();
     }
 
-    function removeItem(id) {
-      const card = document.getElementById(`item-card-${id}`);
-      if (card) {
-        card.remove();
+    function removeGridRow(id) {
+      const row = document.getElementById(`grid-row-${id}`);
+      if (row) {
+        row.remove();
         calculateBOQ();
       }
     }
@@ -295,20 +345,21 @@
     // Recalculate totals
     function calculateBOQ() {
       let subtotal = 0;
-      const cards = document.querySelectorAll('.boq-card');
 
-      cards.forEach(card => {
-        const id = card.id.replace('item-card-', '');
-        const qty = parseFloat(document.getElementById(`qty-${id}`)?.value) || 0;
-        const rate = parseFloat(document.getElementById(`rate-${id}`)?.value) || 0;
-        const total = qty * rate;
-        subtotal += total;
+      for (let i = 1; i <= itemCounter; i++) {
+        const qtyElem = document.getElementById(`qty-${i}`);
+        const rateElem = document.getElementById(`rate-${i}`);
+        const totalElem = document.getElementById(`total-${i}`);
 
-        const totalElem = document.getElementById(`total-${id}`);
-        if (totalElem) {
+        if (qtyElem && rateElem && totalElem) {
+          const qty = parseFloat(qtyElem.value) || 0;
+          const rate = parseFloat(rateElem.value) || 0;
+          const total = qty * rate;
+          subtotal += total;
+
           totalElem.innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
-      });
+      }
 
       let contingency = subtotal * 0.05;
       let vat = (subtotal + contingency) * 0.10;
@@ -320,7 +371,10 @@
       document.getElementById('summary-grandtotal').innerText = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
-    window.onload = calculateBOQ;
+    // Initialize with 2 sample items
+    window.onload = function() {
+      confirmAddItem(); // Default sample 1
+    };
   </script>
 </body>
 </html>
