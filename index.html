@@ -35,6 +35,11 @@
     .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
     .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
+    /* Auth Error Banner */
+    .auth-error {
+      color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; display: none; word-wrap: break-word;
+    }
+
     /* App Header Bar */
     .app-header {
       background: var(--primary); color: white; padding: 14px 20px; border-radius: 8px;
@@ -104,6 +109,14 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged,
+      updateProfile 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC4hWM0gh-CaDDuKE5rV2bP4JG8VcsY-aM",
@@ -115,18 +128,69 @@
       measurementId: "G-8KS68FXEJC"
     };
 
-    // Initialize Firebase
+    // Initialize Firebase & Auth
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
     // Initialize Analytics safely
     isSupported().then(supported => {
       if (supported) {
-        const analytics = getAnalytics(app);
+        getAnalytics(app);
       }
     });
 
-    // Expose app instance globally
+    // Expose instances and auth functions globally
     window.firebaseApp = app;
+    window.auth = auth;
+
+    // Listen to real-time Authentication State Changes
+    onAuthStateChanged(auth, (user) => {
+      const overlay = document.getElementById('auth-overlay');
+      const userDisplay = document.getElementById('user-display');
+
+      if (user) {
+        const displayName = user.displayName || user.email.split('@')[0];
+        userDisplay.innerText = `Logged In: ${displayName}`;
+        overlay.style.display = 'none';
+      } else {
+        userDisplay.innerText = `Logged In: Guest`;
+        overlay.style.display = 'flex';
+      }
+    });
+
+    // Attach authentication handlers to global scope
+    window.firebaseSignUp = async (displayName, email, password) => {
+      const errorElem = document.getElementById('signup-error');
+      errorElem.style.display = 'none';
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (displayName) {
+          await updateProfile(userCredential.user, { displayName: displayName });
+        }
+      } catch (error) {
+        errorElem.innerText = error.message.replace('Firebase: ', '');
+        errorElem.style.display = 'block';
+      }
+    };
+
+    window.firebaseSignIn = async (email, password) => {
+      const errorElem = document.getElementById('signin-error');
+      errorElem.style.display = 'none';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        errorElem.innerText = error.message.replace('Firebase: ', '');
+        errorElem.style.display = 'block';
+      }
+    };
+
+    window.firebaseSignOut = async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error("Logout Error:", error);
+      }
+    };
   </script>
 
   <!-- Dropdown List for Units -->
@@ -145,17 +209,20 @@
   <div id="auth-overlay">
     <div class="auth-card" id="signin-box">
       <h2>Sign In — BOQ Engine</h2>
-      <input type="text" class="auth-input" id="auth-name-in" placeholder="User Name (e.g., SOKPANHA)">
-      <input type="password" class="auth-input" placeholder="Password">
-      <button class="btn-auth" onclick="handleAuth('in')">Sign In</button>
+      <input type="email" class="auth-input" id="auth-email-in" placeholder="Email Address">
+      <input type="password" class="auth-input" id="auth-pass-in" placeholder="Password">
+      <button class="btn-auth" onclick="handleSignIn()">Sign In</button>
+      <div id="signin-error" class="auth-error"></div>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Don't have an account? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign Up</a></p>
     </div>
+
     <div class="auth-card" id="signup-box" style="display:none;">
       <h2>Create Account</h2>
-      <input type="text" class="auth-input" id="auth-name-up" placeholder="User Name (e.g., SOKPANHA)">
-      <input type="email" class="auth-input" placeholder="Email">
-      <input type="password" class="auth-input" placeholder="Password">
-      <button class="btn-auth" onclick="handleAuth('up')">Sign Up</button>
+      <input type="text" class="auth-input" id="auth-name-up" placeholder="Full Name (e.g., SOKPANHA)">
+      <input type="email" class="auth-input" id="auth-email-up" placeholder="Email Address">
+      <input type="password" class="auth-input" id="auth-pass-up" placeholder="Password (min. 6 characters)">
+      <button class="btn-auth" onclick="handleSignUp()">Sign Up</button>
+      <div id="signup-error" class="auth-error"></div>
       <p style="font-size: 12px; text-align: center; margin-top: 12px;">Already registered? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign In</a></p>
     </div>
   </div>
@@ -290,25 +357,35 @@
       ]
     };
 
-    function handleAuth(type) {
-      let userName = "";
-      if (type === 'in') {
-        userName = document.getElementById('auth-name-in').value;
-      } else {
-        userName = document.getElementById('auth-name-up').value;
+    // Trigger Firebase Sign In
+    function handleSignIn() {
+      const email = document.getElementById('auth-email-in').value.trim();
+      const pass = document.getElementById('auth-pass-in').value;
+      if (email && pass) {
+        window.firebaseSignIn(email, pass);
       }
-      userName = userName.trim() || "User";
-      document.getElementById('user-display').innerText = `Logged In: ${userName}`;
-      document.getElementById('auth-overlay').style.display = 'none';
     }
 
+    // Trigger Firebase Sign Up
+    function handleSignUp() {
+      const name = document.getElementById('auth-name-up').value.trim();
+      const email = document.getElementById('auth-email-up').value.trim();
+      const pass = document.getElementById('auth-pass-up').value;
+      if (email && pass) {
+        window.firebaseSignUp(name, email, pass);
+      }
+    }
+
+    // Trigger Firebase Sign Out
     function handleLogout() {
-      document.getElementById('auth-overlay').style.display = 'flex';
+      window.firebaseSignOut();
     }
 
     function toggleAuthMode() {
       const signin = document.getElementById('signin-box');
       const signup = document.getElementById('signup-box');
+      document.getElementById('signin-error').style.display = 'none';
+      document.getElementById('signup-error').style.display = 'none';
       signin.style.display = (signin.style.display === 'none') ? 'block' : 'none';
       signup.style.display = (signup.style.display === 'none') ? 'block' : 'none';
     }
