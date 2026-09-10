@@ -2,39 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Crucial for smartphone & tablet viewport scaling -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOQ Web Application Mobile Preview</title>
+  <title>BOQ Preview</title>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f8fafc;
-      margin: 0;
-      padding: 16px;
-    }
-
-    /* Container setup */
-    .boq-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow-x: auto; /* Enables smooth horizontal scroll on narrow mobile screens */
-    }
-
-    /* Responsive adjustments for mobile devices */
-    @media (max-width: 640px) {
-      body { padding: 8px; }
-      table { font-size: 12px; }
-      th, td { padding: 6px !important; }
-    }
+    body { font-family: sans-serif; padding: 12px; background: #f8fafc; margin: 0; }
+    .boq-card { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .header { font-weight: bold; font-size: 16px; color: #0f172a; margin-bottom: 8px; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+    .total { font-weight: bold; color: #16a34a; font-size: 16px; border-top: 1px solid #e2e8f0; pt: 8px; }
   </style>
 </head>
 <body>
 
-  <div class="boq-container">
-    <!-- Paste your table snippet here -->
+  <h2 style="color: #0f172a; font-size: 18px;">Embassy Renovation — Mobile BOQ</h2>
+
+  <div class="boq-card">
+    <div class="header">1.1 Site Excavation (Machine)</div>
+    <div class="row"><span>Quantity:</span> <strong>450.00 m³</strong></div>
+    <div class="row"><span>Unit Rate:</span> <strong>$4.50</strong></div>
+    <div class="row total"><span>Total Amount:</span> <span>$2,025.00</span></div>
+  </div>
+
+  <div class="boq-card">
+    <div class="header">1.2 Reinforced Concrete Footings</div>
+    <div class="row"><span>Quantity:</span> <strong>85.00 m³</strong></div>
+    <div class="row"><span>Unit Rate:</span> <strong>$209.50</strong></div>
+    <div class="row total"><span>Total Amount:</span> <span>$17,807.50</span></div>
   </div>
 
 </body>
