@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Crucial for smartphone & tablet viewport scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BOQ Web Application Mobile Preview</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 16px;
+    }
+
+    /* Container setup */
+    .boq-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow-x: auto; /* Enables smooth horizontal scroll on narrow mobile screens */
+    }
+
+    /* Responsive adjustments for mobile devices */
+    @media (max-width: 640px) {
+      body { padding: 8px; }
+      table { font-size: 12px; }
+      th, td { padding: 6px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="boq-container">
+    <!-- Paste your table snippet here -->
+  </div>
+
+</body>
+</html>
