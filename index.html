@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estimate Analysis — Construction Cost Dashboard</title>
+  <title>Green BOQ Pro — Estimate & Financial Analysis Dashboard</title>
+  
+  <!-- SheetJS & ChartJS Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -11,171 +14,179 @@
       --bg-app: #f4f5f8;
       --bg-card: #ffffff;
       --border-color: #e5e7eb;
-      --text-primary: #111827;
-      --text-secondary: #6b7280;
-      --accent-yellow: #facc15;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --primary-green: #064e3b;
+      --accent-green: #059669;
       --highlight-yellow: #fef08a;
-      --accent-blue: #3b82f6;
-      --accent-green: #22c55e;
-      --radius-sm: 6px;
+      --accent-blue: #0284c7;
+      --danger: #ef4444;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
-    body { background-color: var(--bg-app); color: var(--text-primary); font-size: 12px; padding: 16px; min-height: 100vh; }
+    body { background-color: var(--bg-app); color: var(--text-primary); font-size: 12px; padding: 14px; min-height: 100vh; }
 
-    /* App Container Shell */
-    .app-container { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 20px; max-width: 1600px; margin: 0 auto; }
+    /* Main Application Container */
+    .app-container { background: var(--bg-card); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 18px; max-width: 1650px; margin: 0 auto; }
 
-    /* Header Bar */
-    header.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .header-title { font-size: 18px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-    
-    .search-bar-wrapper { position: relative; width: 320px; }
-    .search-bar-wrapper input {
-      width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border-color);
-      border-radius: 20px; background: #f9fafb; font-size: 12px; outline: none; transition: 0.2s;
+    /* Top Navigation Header */
+    header.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .brand-title { font-size: 18px; font-weight: 800; color: var(--primary-green); letter-spacing: -0.5px; }
+    .project-badge { background: #d1fae5; color: var(--primary-green); padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; }
+
+    .search-wrapper { position: relative; width: 300px; }
+    .search-wrapper input {
+      width: 100%; padding: 7px 12px 7px 32px; border: 1px solid var(--border-color);
+      border-radius: 18px; background: #f8fafc; font-size: 12px; outline: none; transition: 0.2s;
     }
-    .search-bar-wrapper input:focus { border-color: var(--accent-blue); background: #fff; }
-    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 12px; }
+    .search-wrapper input:focus { border-color: var(--accent-green); background: #fff; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
 
-    .user-profile { display: flex; align-items: center; gap: 10px; }
-    .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #475569; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-hdr { padding: 6px 12px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    .btn-save { background: #d97706; color: white; }
+    .btn-export { background: #0284c7; color: white; }
+    .btn-hdr:hover { opacity: 0.9; }
 
-    /* Filter Toolbar Row */
+    /* Filter Controls Toolbar */
     .filter-toolbar {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
-      background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+      background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;
     }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; }
-    .filter-group label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+    .filter-group { display: flex; flex-direction: column; gap: 3px; }
+    .filter-group label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
     .filter-group select, .filter-group input {
-      padding: 6px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
-      background: #fff; font-size: 12px; outline: none; color: var(--text-primary);
+      padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 5px;
+      background: #fff; font-size: 11px; outline: none;
     }
 
-    /* Main Grid Split */
-    .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+    /* Grid Layout: Main BOQ Table + Right Analytics */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
 
-    /* Left Table Area */
+    /* BOQ Table Container */
     .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
-    .section-title-bar { background: #fafafa; padding: 10px 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); color: #334155; }
+    .section-title-bar { background: var(--primary-green); color: white; padding: 10px 14px; font-weight: 700; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
 
-    table.estimate-table { width: 100%; border-collapse: collapse; text-align: left; }
-    table.estimate-table th {
-      background: #f8fafc; padding: 10px; font-size: 11px; font-weight: 700; color: var(--text-secondary);
-      border-bottom: 1px solid var(--border-color); border-right: 1px solid #f1f5f9; text-transform: capitalize;
+    table.boq-table { width: 100%; border-collapse: collapse; text-align: left; }
+    table.boq-table th {
+      background: #f1f5f9; padding: 8px 10px; font-size: 10px; font-weight: 700; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color); border-right: 1px solid #e2e8f0; text-transform: uppercase;
     }
-    table.estimate-table td {
-      padding: 8px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; font-size: 12px;
+    table.boq-table td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; }
+
+    /* Row Hierarchy */
+    .row-wbs-header { background: var(--highlight-yellow) !important; font-weight: 700; cursor: pointer; color: #1e293b; }
+    .row-item:hover { background: #f0fdf4; }
+    .toggle-icon { cursor: pointer; display: inline-block; width: 14px; font-weight: bold; }
+
+    /* Editable Cells */
+    .editable-cell { cursor: pointer; text-align: right; font-weight: 500; }
+    .editable-cell:hover { background: #e0f2fe; border-radius: 4px; }
+    .editable-cell input { width: 75px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid var(--accent-blue); border-radius: 3px; outline: none; }
+
+    /* Analytics Cards & Visuals */
+    .analytics-col { display: flex; flex-direction: column; gap: 14px; }
+    .analytics-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
+    .card-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .progress-list { display: flex; flex-direction: column; gap: 8px; }
+    .progress-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .progress-pill { padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px; background: #d1fae5; color: var(--primary-green); }
+
+    .chart-box { height: 170px; position: relative; }
+
+    /* Notification Banner */
+    #toast-banner {
+      position: fixed; bottom: 20px; right: 20px; background: var(--primary-green); color: white;
+      padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: bold; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000;
     }
-
-    /* Row Hierarchy Styles */
-    .row-parent { background: var(--highlight-yellow) !important; font-weight: 700; cursor: pointer; }
-    .row-child { background: #ffffff; }
-    .row-child:hover { background: #f8fafc; }
-    .toggle-btn { cursor: pointer; font-size: 12px; user-select: none; margin-right: 6px; display: inline-block; width: 14px; }
-    
-    .editable-cell { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.15s; text-align: right; }
-    .editable-cell:hover { background: #e0f2fe; }
-    .editable-cell input { width: 90px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid var(--accent-blue); border-radius: 3px; }
-
-    .tooltip-icon { display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border-radius: 50%; text-align: center; font-size: 10px; line-height: 14px; color: #475569; margin-left: 4px; cursor: help; }
-
-    /* Right Analytics Column */
-    .analytics-col { display: flex; flex-direction: column; gap: 16px; }
-    .analytics-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
-    .analytics-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* Committed Percentage List */
-    .percent-list { display: flex; flex-direction: column; gap: 6px; }
-    .percent-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-    .percent-badge { padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px; background: var(--highlight-yellow); color: #854d0e; }
-
-    /* Chart Containers */
-    .chart-box { height: 180px; position: relative; }
-
-    /* Tooltip Banner */
-    .info-banner { background: #1e293b; color: white; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
 
   <div class="app-container">
     
-    <!-- Header -->
+    <!-- Top Header -->
     <header class="dashboard-header">
       <div class="header-left">
-        <div class="header-title">📐 Estimate Analysis</div>
+        <span class="brand-title">Green BOQ Pro</span>
+        <span class="project-badge">Project: Fast-Track Commercial Renovation</span>
       </div>
-      <div class="search-bar-wrapper">
+
+      <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="global-search" placeholder="Search item, division..." onkeyup="filterTable()">
+        <input type="text" id="global-search" placeholder="Search work item, specification..." onkeyup="filterTable()">
       </div>
-      <div class="user-profile">
-        <span style="font-weight: 600; font-size: 12px;">John Doe</span>
-        <div class="avatar">JD</div>
+
+      <div class="header-actions">
+        <button class="btn-hdr" onclick="openCustomItemModal()" style="background:#059669; color:white;">+ Add Item</button>
+        <button class="btn-hdr btn-save" onclick="saveToLocalStorage()">☁️ Save Progress</button>
+        <button class="btn-hdr btn-export" onclick="exportToExcel()">📊 Export Excel (.xlsx)</button>
       </div>
     </header>
 
-    <!-- Filter Toolbar -->
+    <!-- Filter Control Toolbar -->
     <div class="filter-toolbar">
       <div class="filter-group">
-        <label>Projects</label>
-        <input type="text" value="137" readonly>
+        <label>Contract Ref</label>
+        <input type="text" value="BOQ-2026-009" readonly>
       </div>
       <div class="filter-group">
-        <label>Project</label>
-        <select id="project-filter" onchange="filterProject()">
-          <option value="ALL">All Projects</option>
-          <option value="Vortex Business Centre" selected>Vortex Business Centre</option>
-          <option value="Prime Contact 1">Prime Contact 1</option>
+        <label>WBS Section Filter</label>
+        <select id="wbs-filter" onchange="filterWBS()">
+          <option value="ALL">All Divisions (Structure / Arch / MEP)</option>
+          <option value="1.0 Structure Works">1.0 Structure Works</option>
+          <option value="2.0 Architectural Works">2.0 Architectural Works</option>
+          <option value="3.0 MEP Works">3.0 MEP Works</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Division</label>
-        <select id="division-filter">
-          <option value="ALL">All Divisions</option>
-          <option>01 | General Requirements</option>
-          <option>02 | Site Construction</option>
-          <option>03 | Concrete</option>
+        <label>Unit Filter</label>
+        <select id="unit-filter" onchange="renderTable()">
+          <option value="ALL">All Units (m², m³, Kg, Set)</option>
+          <option value="m²">m²</option>
+          <option value="m³">m³</option>
+          <option value="Kg">Kg</option>
         </select>
       </div>
       <div class="filter-group">
-        <label>Cost Code</label>
-        <select><option>All Cost Codes</option></select>
+        <label>Currency</label>
+        <select id="currency-select" onchange="renderTable()"><option value="USD">USD ($)</option></select>
       </div>
       <div class="filter-group">
-        <label>Is Bought Out?</label>
-        <select><option>All Statuses</option><option>Yes</option><option>No</option></select>
+        <label>Claim Status</label>
+        <select><option>All Items</option><option>Pending Claim</option><option>Certified (IPC)</option></select>
       </div>
-    </div>
-
-    <!-- Info Banner / Tooltip -->
-    <div class="info-banner">
-      <span>ℹ️ <strong>Interval A/B</strong> lets you compare historical estimates across different sprints and project revisions.</span>
-      <span style="cursor:pointer;" onclick="this.parentElement.style.display='none'">✕</span>
     </div>
 
     <!-- Main Workspace Split -->
     <div class="dashboard-grid">
       
-      <!-- Left Main Table -->
+      <!-- Left Main BOQ Table -->
       <div>
         <div class="table-container">
-          <div class="section-title-bar">Budget Summary</div>
-          <table class="estimate-table" id="main-table">
+          <div class="section-title-bar">
+            <span>Bill of Quantities — Master Schedule of Works</span>
+            <span id="grand-total-display">Grand Total: $0.00</span>
+          </div>
+          
+          <table class="boq-table" id="boq-table">
             <thead>
               <tr>
-                <th style="width: 200px;">Project name</th>
+                <th style="width: 60px;">Code</th>
+                <th style="width: 230px;">Item Description & Spec</th>
+                <th style="width: 50px;">Unit</th>
+                <th style="text-align: right;">Contract Qty</th>
+                <th style="text-align: right;">Rate ($)</th>
                 <th style="text-align: right;">Original Budget ($)</th>
-                <th style="text-align: right;">Approved CO's <span class="tooltip-icon" title="Approved Change Orders">i</span></th>
-                <th style="text-align: right;">Job to Date Costs <span class="tooltip-icon" title="Costs accrued to date">i</span></th>
+                <th style="text-align: right;">CO Variation ($)</th>
                 <th style="text-align: right;">Revised Budget ($)</th>
+                <th style="text-align: right;">Job To Date (IPC) ($)</th>
               </tr>
             </thead>
-            <tbody id="table-body">
+            <tbody id="boq-table-body">
               <!-- Rendered dynamically -->
             </tbody>
           </table>
@@ -185,46 +196,50 @@
       <!-- Right Analytics Sidebar -->
       <div class="analytics-col">
         
-        <!-- Filter Controls -->
-        <div class="analytics-card" style="padding: 10px;">
-          <div style="display: flex; gap: 10px;">
-            <div style="flex:1;">
-              <label style="font-size:10px; font-weight:bold; color:var(--text-secondary);">Budgeted?</label>
-              <select style="width:100%; padding:4px; font-size:11px; border:1px solid var(--border-color); border-radius:4px;"><option>All</option></select>
-            </div>
-            <div style="flex:1;">
-              <label style="font-size:10px; font-weight:bold; color:var(--text-secondary);">Sub Job</label>
-              <select style="width:100%; padding:4px; font-size:11px; border:1px solid var(--border-color); border-radius:4px;"><option>All</option></select>
-            </div>
+        <!-- Summary Totals Breakdown Card -->
+        <div class="analytics-card" style="background:#f0fdf4; border-color:#a7f3d0;">
+          <div class="card-title" style="color:#064e3b;">Financial Summary (IPC Progress)</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Total Original Budget:</span>
+            <strong id="card-orig-total">$0.00</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Approved Variations (COs):</span>
+            <strong id="card-co-total" style="color:#d97706;">$0.00</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12px; border-top:1px dashed #a7f3d0; padding-top:6px;">
+            <span>Revised Project Budget:</span>
+            <strong id="card-revised-total" style="color:#0284c7;">$0.00</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-top:6px; color:#064e3b; border-top:1px solid #a7f3d0; padding-top:6px;">
+            <span>Claimed To Date (IPC):</span>
+            <span id="card-claimed-total">$0.00</span>
           </div>
         </div>
 
-        <!-- % Committed List -->
+        <!-- Completion Percentage Pill Progress List -->
         <div class="analytics-card">
-          <div class="analytics-title">% Committed</div>
-          <div class="percent-list">
-            <div class="percent-item"><span>03 | Gear Sets</span><span class="percent-badge">863.74%</span></div>
-            <div class="percent-item"><span>02 | Site Construction</span><span class="percent-badge">909.68%</span></div>
-            <div class="percent-item"><span>05 | Metals</span><span class="percent-badge">608.58%</span></div>
-            <div class="percent-item"><span>16 | Mechanical</span><span class="percent-badge">289.70%</span></div>
-            <div class="percent-item"><span>01 | General Requirements</span><span class="percent-badge">245.64%</span></div>
-            <div class="percent-item"><span>02 | Work Orders</span><span class="percent-badge">100.00%</span></div>
+          <div class="card-title">Division Completion (%)</div>
+          <div class="progress-list">
+            <div class="progress-item"><span>1.0 Structure Works</span><span class="progress-pill" id="prog-struct">0.00%</span></div>
+            <div class="progress-item"><span>2.0 Architectural Works</span><span class="progress-pill" id="prog-arch">0.00%</span></div>
+            <div class="progress-item"><span>3.0 MEP Works</span><span class="progress-pill" id="prog-mep">0.00%</span></div>
           </div>
         </div>
 
-        <!-- Chart 1: Revised Budget vs Estimated Cost -->
+        <!-- Chart 1: Revised Budget vs Job To Date -->
         <div class="analytics-card">
-          <div class="analytics-title">Revised Budget vs Estimated Cost at Completion</div>
+          <div class="card-title">Budget vs. Actual Certified Progress</div>
           <div class="chart-box">
-            <canvas id="budgetvsCostChart"></canvas>
+            <canvas id="budgetVsProgressChart"></canvas>
           </div>
         </div>
 
-        <!-- Chart 2: Budget vs Committed Costs -->
+        <!-- Chart 2: Division Cost Allocation Chart -->
         <div class="analytics-card">
-          <div class="analytics-title">Budget vs Committed Costs</div>
+          <div class="card-title">Cost Allocation by Work Division</div>
           <div class="chart-box">
-            <canvas id="committedChart"></canvas>
+            <canvas id="divisionCostChart"></canvas>
           </div>
         </div>
 
@@ -234,41 +249,39 @@
 
   </div>
 
+  <div id="toast-banner">Notification</div>
+
   <script>
-    // Data Structure Cloned from Image
-    const projectsData = [
+    // Standard Master Construction Data Structure
+    let wbsData = [
       {
-        id: 'p1',
-        name: 'Vortex Business Centre',
+        section: "1.0 Structure Works",
         expanded: true,
         items: [
-          { name: '01 | General Requirements', original: 390500.00, co: 0.00, jobToDate: 52600.00 },
-          { name: '02 | Site Construction', original: 1173410.00, co: 0.00, jobToDate: 0.00 },
-          { name: '03 | Concrete', original: 1628500.00, co: 0.00, jobToDate: 500.00 },
-          { name: '04 | Masonry', original: 1691000.00, co: 0.00, jobToDate: 0.00 },
-          { name: '05 | Metals', original: 1175770.00, co: 0.00, jobToDate: 0.00 },
-          { name: '06 | Wood and Plastics', original: 2270020.00, co: 0.00, jobToDate: 0.00 },
-          { name: '07 | Doors and Windows', original: 1206370.00, co: 0.00, jobToDate: 880.00 },
-          { name: '08 | Finishes', original: 1420700.00, co: 0.00, jobToDate: 300.00 },
-          { name: '09 | SPECIALTIES', original: 193290.00, co: 0.00, jobToDate: 0.00 }
+          { code: "1.01", desc: "Site Excavation & Backfilling", unit: "m³", qty: 450, rate: 12.00, co: 0, jobToDate: 5400.00 },
+          { code: "1.02", desc: "Lean Concrete C15/20 (100mm)", unit: "m²", qty: 320, rate: 15.00, co: 0, jobToDate: 4800.00 },
+          { code: "1.03", desc: "Reinforced Concrete Footings (C30/35)", unit: "m³", qty: 180, rate: 125.00, co: 1500, jobToDate: 22500.00 },
+          { code: "1.04", desc: "Steel Reinforcement Rebar (Grade 400)", unit: "Kg", qty: 12500, rate: 1.10, co: 0, jobToDate: 13750.00 },
+          { code: "1.05", desc: "Concrete Columns & Beams (C30/35)", unit: "m³", qty: 210, rate: 140.00, co: 0, jobToDate: 14700.00 }
         ]
       },
       {
-        id: 'p2',
-        name: 'Prime Contact 1',
-        expanded: false,
+        section: "2.0 Architectural Works",
+        expanded: true,
         items: [
-          { name: '01 | General Requirements', original: 10.00, co: 0.00, jobToDate: 0.00 }
+          { code: "2.01", desc: "Floor Tiles (60x60 Porcelain)", unit: "m²", qty: 850, rate: 25.00, co: 500, jobToDate: 12500.00 },
+          { code: "2.02", desc: "Wall Plastering (Cement Mortar)", unit: "m²", qty: 1400, rate: 8.50, co: 0, jobToDate: 11900.00 },
+          { code: "2.03", desc: "Aluminum Framed Fixed Glazing", unit: "m²", qty: 120, rate: 110.00, co: 0, jobToDate: 6600.00 },
+          { code: "2.04", desc: "Suspended Gypsum Ceiling Board", unit: "m²", qty: 650, rate: 18.00, co: 0, jobToDate: 3500.00 }
         ]
       },
       {
-        id: 'p3',
-        name: 'Vortex Business Centre (Phase 2)',
-        expanded: false,
+        section: "3.0 MEP Works",
+        expanded: true,
         items: [
-          { name: '01 | General Requirements', original: 1028495.00, co: 0.00, jobToDate: 123231.00 },
-          { name: '02 | Site Construction', original: 1175770.00, co: 0.00, jobToDate: 0.00 },
-          { name: '03 | Concrete', original: 11583069.00, co: 0.00, jobToDate: 2500.00 }
+          { code: "3.01", desc: "Electrical Wiring & PVC Conduits", unit: "Lot", qty: 1, rate: 8500.00, co: 0, jobToDate: 4250.00 },
+          { code: "3.02", desc: "LED Downlight Fixtures", unit: "Pcs", qty: 240, rate: 16.50, co: 0, jobToDate: 1980.00 },
+          { code: "3.03", desc: "PPR Water Supply & PVC Drain Pipes", unit: "Lot", qty: 1, rate: 6200.00, co: 0, jobToDate: 3100.00 }
         ]
       }
     ];
@@ -276,141 +289,249 @@
     let chart1Instance = null;
     let chart2Instance = null;
 
-    // Render Table Data
     function renderTable() {
-      const tbody = document.getElementById('table-body');
+      const tbody = document.getElementById('boq-table-body');
       tbody.innerHTML = '';
 
-      projectsData.forEach((project, pIdx) => {
-        // Calculate Parent Totals
-        const parentOriginal = project.items.reduce((sum, i) => sum + i.original, 0);
-        const parentCO = project.items.reduce((sum, i) => sum + i.co, 0);
-        const parentJob = project.items.reduce((sum, i) => sum + i.jobToDate, 0);
-        const parentRevised = parentOriginal + parentCO;
+      const unitFilter = document.getElementById('unit-filter').value;
+      let grandTotalOriginal = 0;
+      let grandTotalCO = 0;
+      let grandTotalRevised = 0;
+      let grandTotalClaimed = 0;
 
-        // Parent Row
-        const parentTr = document.createElement('tr');
-        parentTr.className = 'row-parent';
-        parentTr.innerHTML = `
-          <td>
-            <span class="toggle-btn" onclick="toggleExpand(${pIdx})">${project.expanded ? '▼' : '►'}</span>
-            ${project.name}
+      let sectionTotals = {};
+
+      wbsData.forEach((sec, sIdx) => {
+        let secOriginal = 0;
+        let secCO = 0;
+        let secJobToDate = 0;
+
+        // Filter items
+        let filteredItems = sec.items.filter(item => {
+          return (unitFilter === 'ALL' || item.unit === unitFilter);
+        });
+
+        filteredItems.forEach(item => {
+          const origBudget = item.qty * item.rate;
+          secOriginal += origBudget;
+          secCO += item.co;
+          secJobToDate += item.jobToDate;
+        });
+
+        const secRevised = secOriginal + secCO;
+        sectionTotals[sec.section] = { orig: secOriginal, revised: secRevised, claimed: secJobToDate };
+
+        grandTotalOriginal += secOriginal;
+        grandTotalCO += secCO;
+        grandTotalRevised += secRevised;
+        grandTotalClaimed += secJobToDate;
+
+        // Section WBS Header Row
+        const headerTr = document.createElement('tr');
+        headerTr.className = 'row-wbs-header';
+        headerTr.innerHTML = `
+          <td colspan="3">
+            <span class="toggle-icon" onclick="toggleSection(${sIdx})">${sec.expanded ? '▼' : '►'}</span>
+            <strong>${sec.section}</strong>
           </td>
-          <td style="text-align:right;">${formatCurrency(parentOriginal)}</td>
-          <td style="text-align:right;">${formatCurrency(parentCO)}</td>
-          <td style="text-align:right;">${formatCurrency(parentJob)}</td>
-          <td style="text-align:right;">${formatCurrency(parentRevised)}</td>
+          <td></td><td></td>
+          <td style="text-align:right;">${formatCurr(secOriginal)}</td>
+          <td style="text-align:right;">${formatCurr(secCO)}</td>
+          <td style="text-align:right;">${formatCurr(secRevised)}</td>
+          <td style="text-align:right;">${formatCurr(secJobToDate)}</td>
         `;
-        tbody.appendChild(parentTr);
+        tbody.appendChild(headerTr);
 
-        // Child Rows (If Expanded)
-        if (project.expanded) {
-          project.items.forEach((item, cIdx) => {
-            const childTr = document.createElement('tr');
-            childTr.className = 'row-child';
-            const revised = item.original + item.co;
+        // Render Item Rows
+        if (sec.expanded) {
+          filteredItems.forEach((item, iIdx) => {
+            const origBudget = item.qty * item.rate;
+            const revisedBudget = origBudget + item.co;
 
-            childTr.innerHTML = `
-              <td style="padding-left: 28px; color: #475569;">${item.name}</td>
-              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'original')">${formatCurrency(item.original)}</td>
-              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'co')">${formatCurrency(item.co)}</td>
-              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'jobToDate')">${formatCurrency(item.jobToDate)}</td>
-              <td style="text-align:right; font-weight:600;">${formatCurrency(revised)}</td>
+            const tr = document.createElement('tr');
+            tr.className = 'row-item';
+            tr.innerHTML = `
+              <td style="font-weight:bold; color:var(--primary-green);">${item.code}</td>
+              <td>${item.desc}</td>
+              <td align="center">${item.unit}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${sIdx}, ${iIdx}, 'qty')">${item.qty.toLocaleString()}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${sIdx}, ${iIdx}, 'rate')">${formatCurr(item.rate)}</td>
+              <td style="text-align:right; font-weight:600;">${formatCurr(origBudget)}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${sIdx}, ${iIdx}, 'co')">${formatCurr(item.co)}</td>
+              <td style="text-align:right; font-weight:bold; color:var(--accent-blue);">${formatCurr(revisedBudget)}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${sIdx}, ${iIdx}, 'jobToDate')">${formatCurr(item.jobToDate)}</td>
             `;
-            tbody.appendChild(childTr);
+            tbody.appendChild(tr);
           });
         }
       });
 
-      updateCharts();
+      // Update Header Cards & Stats
+      document.getElementById('grand-total-display').innerText = `Grand Total (Revised): ${formatCurr(grandTotalRevised)}`;
+      document.getElementById('card-orig-total').innerText = formatCurr(grandTotalOriginal);
+      document.getElementById('card-co-total').innerText = formatCurr(grandTotalCO);
+      document.getElementById('card-revised-total').innerText = formatCurr(grandTotalRevised);
+      document.getElementById('card-claimed-total').innerText = formatCurr(grandTotalClaimed);
+
+      // Completion Percentages
+      const pStruct = sectionTotals["1.0 Structure Works"]?.revised ? (sectionTotals["1.0 Structure Works"].claimed / sectionTotals["1.0 Structure Works"].revised * 100).toFixed(2) : "0.00";
+      const pArch = sectionTotals["2.0 Architectural Works"]?.revised ? (sectionTotals["2.0 Architectural Works"].claimed / sectionTotals["2.0 Architectural Works"].revised * 100).toFixed(2) : "0.00";
+      const pMep = sectionTotals["3.0 MEP Works"]?.revised ? (sectionTotals["3.0 MEP Works"].claimed / sectionTotals["3.0 MEP Works"].revised * 100).toFixed(2) : "0.00";
+
+      document.getElementById('prog-struct').innerText = `${pStruct}%`;
+      document.getElementById('prog-arch').innerText = `${pArch}%`;
+      document.getElementById('prog-mep').innerText = `${pMep}%`;
+
+      updateCharts(sectionTotals);
     }
 
-    function toggleExpand(index) {
-      projectsData[index].expanded = !projectsData[index].expanded;
+    function toggleSection(idx) {
+      wbsData[idx].expanded = !wbsData[idx].expanded;
       renderTable();
     }
 
-    function formatCurrency(val) {
-      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function formatCurr(val) {
+      return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // Inline Editing Functionality
-    function makeEditable(cell, pIdx, cIdx, field) {
+    function makeEditable(cell, sIdx, iIdx, field) {
       if (cell.querySelector('input')) return;
-      const currentValue = projectsData[pIdx].items[cIdx][field];
-      cell.innerHTML = `<input type="number" value="${currentValue}" step="100" onblur="saveCell(this, ${pIdx}, ${cIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      const val = wbsData[sIdx].items[iIdx][field];
+      cell.innerHTML = `<input type="number" value="${val}" step="any" onblur="saveCell(this, ${sIdx}, ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
       cell.querySelector('input').focus();
     }
 
-    function saveCell(input, pIdx, cIdx, field) {
+    function saveCell(input, sIdx, iIdx, field) {
       const newVal = parseFloat(input.value) || 0;
-      projectsData[pIdx].items[cIdx][field] = newVal;
+      wbsData[sIdx].items[iIdx][field] = newVal;
       renderTable();
     }
 
-    // Search Filter
     function filterTable() {
       const term = document.getElementById('global-search').value.toLowerCase();
-      document.querySelectorAll('#table-body tr.row-child').forEach(row => {
-        const text = row.cells[0].innerText.toLowerCase();
+      document.querySelectorAll('#boq-table-body tr.row-item').forEach(row => {
+        const text = row.cells[1].innerText.toLowerCase();
         row.style.display = text.includes(term) ? '' : 'none';
       });
     }
 
-    // Chart Visualizations
+    function filterWBS() {
+      const val = document.getElementById('wbs-filter').value;
+      wbsData.forEach(sec => {
+        sec.expanded = (val === 'ALL' || sec.section === val);
+      });
+      renderTable();
+    }
+
+    function openCustomItemModal() {
+      const desc = prompt("Enter Material / Work Description:", "Custom Structural Beam");
+      if (!desc) return;
+      const qty = parseFloat(prompt("Enter Quantity:", "100")) || 0;
+      const rate = parseFloat(prompt("Enter Unit Rate ($):", "35.00")) || 0;
+      
+      wbsData[0].items.push({
+        code: `1.${wbsData[0].items.length + 1}`,
+        desc: desc,
+        unit: "m²",
+        qty: qty,
+        rate: rate,
+        co: 0,
+        jobToDate: 0
+      });
+      renderTable();
+      showToast("Custom item added to Structure Works!");
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('green_boq_data', JSON.stringify(wbsData));
+      showToast("✅ BOQ Progress Saved locally!");
+    }
+
+    function loadLocalStorage() {
+      const saved = localStorage.getItem('green_boq_data');
+      if (saved) {
+        try { wbsData = JSON.parse(saved); } catch(e) {}
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast-banner');
+      t.innerText = msg; t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
     function initCharts() {
-      // Horizontal Bar Chart
-      const ctx1 = document.getElementById('budgetvsCostChart').getContext('2d');
+      const ctx1 = document.getElementById('budgetVsProgressChart').getContext('2d');
       chart1Instance = new Chart(ctx1, {
         type: 'bar',
         data: {
-          labels: ['03 Concrete', '02 Site', '15 Mech', '05 Metals'],
+          labels: ['Structure', 'Architectural', 'MEP'],
           datasets: [
-            { label: 'Estimated Cost', data: [162, 117, 80, 117], backgroundColor: '#10b981' },
-            { label: 'Revised Budget', data: [162, 117, 95, 117], backgroundColor: '#0284c7' }
+            { label: 'Revised Budget', data: [0, 0, 0], backgroundColor: '#0284c7' },
+            { label: 'Claimed (IPC)', data: [0, 0, 0], backgroundColor: '#059669' }
           ]
         },
         options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } },
-          scales: { x: { display: false }, y: { ticks: { font: { size: 9 } } } }
+          scales: { y: { display: false } }
         }
       });
 
-      // Grouped Bar Chart
-      const ctx2 = document.getElementById('committedChart').getContext('2d');
+      const ctx2 = document.getElementById('divisionCostChart').getContext('2d');
       chart2Instance = new Chart(ctx2, {
-        type: 'bar',
+        type: 'doughnut',
         data: {
-          labels: ['02 Site', '05 Metals', '15 Mech', '01 Gen', '16 Elec'],
-          datasets: [
-            { label: 'Revised Budget', data: [40, 25, 22, 18, 12], backgroundColor: '#3b82f6' },
-            { label: 'Committed Costs', data: [36, 15, 6, 4, 1], backgroundColor: '#f59e0b' }
-          ]
+          labels: ['Structure', 'Architectural', 'MEP'],
+          datasets: [{ data: [0, 0, 0], backgroundColor: ['#064e3b', '#059669', '#10b981'] }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } },
-          scales: { y: { display: false }, x: { ticks: { font: { size: 9 } } } }
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
         }
       });
     }
 
-    function updateCharts() {
+    function updateCharts(totals) {
       if (!chart1Instance || !chart2Instance) return;
-      
-      // Update chart dataset based on current first project values dynamically
-      const items = projectsData[0].items;
-      chart1Instance.data.datasets[0].data = [items[2].original / 10000, items[1].original / 10000, 80, items[4].original / 10000];
+
+      const structRev = totals["1.0 Structure Works"]?.revised || 0;
+      const archRev = totals["2.0 Architectural Works"]?.revised || 0;
+      const mepRev = totals["3.0 MEP Works"]?.revised || 0;
+
+      const structClaimed = totals["1.0 Structure Works"]?.claimed || 0;
+      const archClaimed = totals["2.0 Architectural Works"]?.claimed || 0;
+      const mepClaimed = totals["3.0 MEP Works"]?.claimed || 0;
+
+      chart1Instance.data.datasets[0].data = [structRev, archRev, mepRev];
+      chart1Instance.data.datasets[1].data = [structClaimed, archClaimed, mepClaimed];
       chart1Instance.update();
+
+      chart2Instance.data.datasets[0].data = [structRev, archRev, mepRev];
+      chart2Instance.update();
+    }
+
+    function exportToExcel() {
+      const data = [["WBS Code", "Item Description", "Unit", "Qty", "Rate ($)", "Original Budget ($)", "Variation CO ($)", "Revised Budget ($)", "Claimed To Date ($)"]];
+      
+      wbsData.forEach(sec => {
+        data.push([sec.section, "", "", "", "", "", "", "", ""]);
+        sec.items.forEach(i => {
+          const orig = i.qty * i.rate;
+          data.push([i.code, i.desc, i.unit, i.qty, i.rate, orig, i.co, orig + i.co, i.jobToDate]);
+        });
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "BOQ_Master");
+      XLSX.writeFile(wb, "BOQ_Financial_Analysis.xlsx");
     }
 
     window.onload = () => {
-      renderTable();
+      loadLocalStorage();
       initCharts();
+      renderTable();
     };
   </script>
 </body>
