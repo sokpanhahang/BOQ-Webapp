@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOQ Master — Hierarchical BOQ Estimator</title>
+  <title>BOQ Master — Fully Dynamic Estimator</title>
   
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,8 +15,8 @@
       --border-color: #cbd5e1;
       --text-primary: #0f172a;
       --text-secondary: #64748b;
-      --main-section-bg: #1e3a8a; /* Dark Blue for Main Section */
-      --sub-section-bg: #fef08a;  /* Yellow for Sub-section */
+      --main-section-bg: #1e3a8a;
+      --sub-section-bg: #fef08a;
       --accent-green: #059669;
       --danger: #ef4444;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -27,21 +27,19 @@
 
     .app-container { background: var(--bg-card); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 18px; max-width: 1650px; margin: 0 auto; }
 
-    /* Header */
     header.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
     .brand-title { font-size: 18px; font-weight: 800; color: #1e3a8a; }
 
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .btn-hdr { padding: 6px 12px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+    .btn-add-main { background: #059669; color: white; }
     .btn-save { background: #d97706; color: white; }
     .btn-export { background: #0284c7; color: white; }
     .btn-clear { background: #ef4444; color: white; }
     .btn-hdr:hover { opacity: 0.9; }
 
-    /* Dashboard Grid Layout */
     .dashboard-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
 
-    /* Table Hierarchy Styling */
     .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
     table.boq-table { width: 100%; border-collapse: collapse; text-align: left; }
     
@@ -51,37 +49,40 @@
     }
     table.boq-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; }
 
-    /* Hierarchy Row Levels */
     .row-main-section { background: var(--main-section-bg) !important; color: white !important; font-weight: 800; font-size: 13px; }
     .row-sub-section { background: var(--sub-section-bg) !important; color: #0f172a !important; font-weight: 700; font-size: 11px; }
     .row-item:hover { background: #f0fdf4; }
 
     .toggle-icon { cursor: pointer; display: inline-block; width: 16px; font-weight: bold; }
 
-    .btn-add-sub {
-      background: #059669; color: white; border: none; padding: 3px 8px;
-      border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 10px;
+    .btn-inline-add {
+      background: rgba(255,255,255,0.25); color: white; border: 1px solid rgba(255,255,255,0.4);
+      padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 8px;
     }
-    .btn-add-sub:hover { background: #047857; }
+    .btn-inline-add-sub {
+      background: #059669; color: white; border: none; padding: 2px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 6px;
+    }
+    .btn-inline-preset {
+      background: #0284c7; color: white; border: none; padding: 2px 6px; border-radius: 4px;
+      font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 4px;
+    }
 
-    /* Editable Cells */
-    .editable-cell { cursor: pointer; text-align: right; font-weight: 500; }
+    .editable-cell { cursor: pointer; font-weight: 500; }
     .editable-cell:hover { background: #e0f2fe; }
-    .editable-cell input { width: 80px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid #0284c7; outline: none; }
+    .editable-cell input { width: 100%; padding: 2px 4px; font-size: 11px; border: 1px solid #0284c7; outline: none; }
 
     .btn-del { color: var(--danger); cursor: pointer; font-weight: bold; text-align: center; }
 
-    /* Sidebar Cards */
     .analytics-col { display: flex; flex-direction: column; gap: 14px; }
     .analytics-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
     .card-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; }
 
-    /* Modal Popup */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
     }
-    .modal-card { background: white; border-radius: 8px; width: 700px; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-card { background: white; border-radius: 8px; width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     .modal-header { font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; }
     .modal-body { overflow-y: auto; flex: 1; padding-right: 5px; }
 
@@ -100,20 +101,20 @@
     
     <header class="dashboard-header">
       <div>
-        <span class="brand-title">BOQ Structure Estimator</span>
-        <span style="background:#e0e7ff; color:#1e3a8a; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:bold; margin-left:8px;">Sub-structure & Super-structure Scope</span>
+        <span class="brand-title">Dynamic BOQ Estimator</span>
+        <span style="background:#e0e7ff; color:#1e3a8a; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:bold; margin-left:8px;">Custom Structure Builder</span>
       </div>
 
       <div class="header-actions">
-        <button class="btn-hdr btn-clear" onclick="clearBOQ()">🗑️ Reset / Blank BOQ</button>
+        <button class="btn-hdr btn-add-main" onclick="promptAddMainSection()">➕ Add Main Section</button>
+        <button class="btn-hdr btn-clear" onclick="clearBOQ()">🗑️ Reset to Blank</button>
         <button class="btn-hdr btn-save" onclick="saveToLocalStorage()">☁️ Save Schedule</button>
-        <button class="btn-hdr btn-export" onclick="exportToExcel()">📊 Export BOQ (.xlsx)</button>
+        <button class="btn-hdr btn-export" onclick="exportToExcel()">📊 Export (.xlsx)</button>
       </div>
     </header>
 
     <div class="dashboard-grid">
       
-      <!-- BOQ Table Workspace -->
       <div>
         <div class="table-container">
           <table class="boq-table" id="boq-table">
@@ -135,18 +136,11 @@
         </div>
       </div>
 
-      <!-- Right Dashboard Analytics Sidebar -->
       <div class="analytics-col">
-        
         <div class="analytics-card" style="background:#eff6ff; border-color:#bfdbfe;">
-          <div class="card-title" style="color:#1e3a8a;">Project Total Summary</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span>I. Sub-Structural Work:</span>
-            <strong id="sum-sub-struct">$0.00</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span>II. Super Structural Work:</span>
-            <strong id="sum-super-struct">$0.00</strong>
+          <div class="card-title" style="color:#1e3a8a;">Project Summary</div>
+          <div id="section-totals-list">
+            <!-- Dynamic Section Totals -->
           </div>
           <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-top:8px; color:#1e3a8a; border-top:1px solid #bfdbfe; padding-top:8px;">
             <span>Grand Total Estimate:</span>
@@ -155,38 +149,36 @@
         </div>
 
         <div class="analytics-card">
-          <div class="card-title">Sub-structure vs Super-structure Breakdown</div>
-          <div style="height: 200px; position: relative;">
+          <div class="card-title">Cost Breakdown by Main Section</div>
+          <div style="height: 220px; position: relative;">
             <canvas id="structurePieChart"></canvas>
           </div>
         </div>
-
       </div>
 
     </div>
 
   </div>
 
-  <!-- Modal for Selecting Scope Items -->
+  <!-- Modal for Preset Scope Items -->
   <div class="modal-overlay" id="add-scope-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <span id="modal-title">Select Items to Add</span>
+        <span id="modal-title">Import Preset Items</span>
         <span style="cursor:pointer; font-size:16px;" onclick="closeModal()">✕</span>
       </div>
       
       <div class="modal-body">
-        <p style="margin-bottom:10px; color:var(--text-secondary);">Select items to import into this section:</p>
         <div style="margin-bottom:10px;">
           <input type="checkbox" id="chk-select-all" onclick="toggleSelectAllModal(this)">
-          <label for="chk-select-all" style="font-weight:bold; cursor:pointer;"> Select All Items</label>
+          <label for="chk-select-all" style="font-weight:bold; cursor:pointer;"> Select All Presets</label>
         </div>
         <div id="modal-items-list"></div>
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px; border-top:1px solid var(--border-color); padding-top:10px;">
         <button class="btn-hdr" style="background:#64748b; color:white;" onclick="closeModal()">Cancel</button>
-        <button class="btn-hdr" style="background:var(--accent-green); color:white;" onclick="confirmAddSelectedItems()">+ Add Selected Items</button>
+        <button class="btn-hdr" style="background:var(--accent-green); color:white;" onclick="confirmAddSelectedItems()">+ Add Selected Presets</button>
       </div>
     </div>
   </div>
@@ -194,157 +186,107 @@
   <div id="toast-banner">Notification</div>
 
   <script>
-    // Exact Scope Master extracted from Structure Scope Testing.xlsx
-    const excelScopeLibrary = {
-      "I": {
-        mainTitle: "SUB-STRUCTURAL WORK",
-        subSections: {
-          "A": {
-            title: "PILING WORK",
-            items: [
-              { desc: "Bore Pile Dia 1.2m, L=39m", unit: "nos" },
-              { desc: "Bore Pile Dia 1.5m, L=39m", unit: "nos" },
-              { desc: "Pile Head cutting Dia 1.2m", unit: "nos" },
-              { desc: "Pile Head cutting Dia 1.5m", unit: "nos" },
-              { desc: "Sonic Test for Bore Pile Dia 1.2m, grouting into sonic tube Dia 49mm (1.8mm)", unit: "nos" },
-              { desc: "Sonic Test for Bore Pile Dia 1.5m, grouting into sonic tube Dia 49mm (1.8mm)", unit: "nos" }
-            ]
-          },
-          "B": {
-            title: "EARTH WORK",
-            items: [
-              { desc: "Excavation for pile cap", unit: "m³" },
-              { desc: "Existing soil backfill", unit: "m³" },
-              { desc: "Disposal surplus soil", unit: "m³" }
-            ]
-          },
-          "C": {
-            title: "BASE WORKS",
-            items: [
-              { desc: "Well compacted soil to Ground floor, pile cap", unit: "m²" },
-              { desc: "Well compacted crushed stone to pile cap, ground beam", unit: "m³" },
-              { desc: "Lean concrete for pile cap and ground slab", unit: "m³" },
-              { desc: "Anti termite spray for ground slab", unit: "m²" }
-            ]
-          },
-          "D": {
-            title: "FOUNDATION WORKS",
-            items: [
-              { desc: "Concrete of 40MPa cylinder for pile caps", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for column stumps", unit: "m³" },
-              { desc: "Formwork for pile caps", unit: "m²" },
-              { desc: "Formwork for column stumps", unit: "m²" },
-              { desc: "Reinforcement for pile caps (SD265 & SD390)", unit: "kg" },
-              { desc: "Reinforcement for column stumps (SD265 & SD390)", unit: "kg" },
-              { desc: "Rebar Coupler", unit: "nos" }
-            ]
-          }
-        }
-      },
-      "II": {
-        mainTitle: "SUPER STRUCTURAL WORK",
-        subSections: {
-          "A": {
-            title: "GROUND FLOOR",
-            items: [
-              { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for column", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for staircase", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for lift", unit: "m³" },
-              { desc: "Formwork for beam", unit: "m²" },
-              { desc: "Formwork for slab", unit: "m²" },
-              { desc: "Formwork for column", unit: "m²" },
-              { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" },
-              { desc: "Reinforcement for slab (SD265 & SD390)", unit: "kg" },
-              { desc: "Reinforcement for column (SD265 & SD390)", unit: "kg" }
-            ]
-          },
-          "B": {
-            title: "FIRST FLOOR",
-            items: [
-              { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
-              { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
-              { desc: "Formwork for beam", unit: "m²" },
-              { desc: "Formwork for slab", unit: "m²" },
-              { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" },
-              { desc: "Reinforcement for slab (SD265 & SD390)", unit: "kg" },
-              { desc: "Post-Tension floor slab with the bond system", unit: "m²" }
-            ]
-          }
-        }
-      }
+    // Presets library from Excel
+    const presetLibrary = {
+      "PILING WORK": [
+        { desc: "Bore Pile Dia 1.2m, L=39m", unit: "nos" },
+        { desc: "Bore Pile Dia 1.5m, L=39m", unit: "nos" },
+        { desc: "Pile Head cutting Dia 1.2m", unit: "nos" },
+        { desc: "Pile Head cutting Dia 1.5m", unit: "nos" },
+        { desc: "Sonic Test for Bore Pile Dia 1.2m", unit: "nos" },
+        { desc: "Sonic Test for Bore Pile Dia 1.5m", unit: "nos" }
+      ],
+      "EARTH WORK": [
+        { desc: "Excavation for pile cap", unit: "m³" },
+        { desc: "Existing soil backfill", unit: "m³" },
+        { desc: "Disposal surplus soil", unit: "m³" }
+      ],
+      "FOUNDATION WORKS": [
+        { desc: "Concrete of 40MPa cylinder for pile caps", unit: "m³" },
+        { desc: "Concrete of 40MPa cylinder for column stumps", unit: "m³" },
+        { desc: "Formwork for pile caps", unit: "m²" },
+        { desc: "Reinforcement for pile caps (SD265 & SD390)", unit: "kg" }
+      ],
+      "GROUND FLOOR": [
+        { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
+        { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
+        { desc: "Formwork for beam", unit: "m²" },
+        { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" }
+      ]
     };
 
-    // Blank State Initial Data Skeleton
-    let boqData = {
-      "I": {
-        num: "I",
-        title: "SUB-STRUCTURAL WORK",
-        expanded: true,
-        subSections: {
-          "A": { num: "A", title: "PILING WORK", expanded: true, items: [] },
-          "B": { num: "B", title: "EARTH WORK", expanded: true, items: [] },
-          "C": { num: "C", title: "BASE WORKS", expanded: true, items: [] },
-          "D": { num: "D", title: "FOUNDATION WORKS", expanded: true, items: [] }
-        }
-      },
-      "II": {
-        num: "II",
-        title: "SUPER STRUCTURAL WORK",
-        expanded: true,
-        subSections: {
-          "A": { num: "A", title: "GROUND FLOOR", expanded: true, items: [] },
-          "B": { num: "B", title: "FIRST FLOOR", expanded: true, items: [] }
-        }
-      }
-    };
-
-    let activeTarget = { mainKey: null, subKey: null };
+    // Blank State Structure array
+    let boqData = [];
+    let activeTarget = { mIdx: null, sIdx: null };
     let pieChartInstance = null;
 
     function renderBOQTable() {
       const tbody = document.getElementById('boq-table-body');
       tbody.innerHTML = '';
 
-      let grandTotal = 0;
-      let subStructTotal = 0;
-      let superStructTotal = 0;
+      const totalsContainer = document.getElementById('section-totals-list');
+      totalsContainer.innerHTML = '';
 
-      Object.keys(boqData).forEach(mKey => {
-        const mainSec = boqData[mKey];
+      let grandTotal = 0;
+      const chartLabels = [];
+      const chartData = [];
+
+      if (boqData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center; padding:30px; color:#94a3b8; font-size:13px;">
+              <strong>BOQ is currently empty.</strong><br>
+              Click <strong>"➕ Add Main Section"</strong> above to start building your BOQ schedule.
+            </td>
+          </tr>
+        `;
+      }
+
+      boqData.forEach((mainSec, mIdx) => {
         let mainTotal = 0;
 
-        // Calculate Main Section Total first
-        Object.keys(mainSec.subSections).forEach(sKey => {
-          const subSec = mainSec.subSections[sKey];
+        mainSec.subSections.forEach(subSec => {
           subSec.items.forEach(item => {
             mainTotal += (item.qty * item.rate);
           });
         });
 
-        if (mKey === "I") subStructTotal = mainTotal;
-        if (mKey === "II") superStructTotal = mainTotal;
         grandTotal += mainTotal;
+        chartLabels.push(mainSec.num + '. ' + mainSec.title);
+        chartData.push(mainTotal);
 
-        // Render Level 1: Main Section Header
+        // Sidebar Summary row
+        totalsContainer.innerHTML += `
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>${mainSec.num}. ${mainSec.title}:</span>
+            <strong>${formatCurr(mainTotal)}</strong>
+          </div>
+        `;
+
+        // Render Level 1: Main Section Row
         const mainTr = document.createElement('tr');
         mainTr.className = 'row-main-section';
         mainTr.innerHTML = `
           <td>${mainSec.num}</td>
           <td colspan="4">
-            <span class="toggle-icon" onclick="toggleMain('${mKey}')">${mainSec.expanded ? '▼' : '►'}</span>
-            ${mainSec.title}
+            <span class="toggle-icon" onclick="toggleMain(${mIdx})">${mainSec.expanded ? '▼' : '►'}</span>
+            <span class="editable-cell" onclick="makeEditableSectionTitle(this, ${mIdx}, null, 'main')">${mainSec.title}</span>
+            <button class="btn-inline-add" onclick="promptAddSubSection(${mIdx})">+ Sub-Section</button>
           </td>
           <td style="text-align:right;">${formatCurr(mainTotal)}</td>
-          <td></td>
+          <td class="btn-del" style="color:#fca5a5;" onclick="deleteMainSection(${mIdx})" title="Delete Main Section">✕</td>
         `;
         tbody.appendChild(mainTr);
 
-        // Render Level 2: Sub-Sections & Items
+        // Render Level 2 & Level 3
         if (mainSec.expanded) {
-          Object.keys(mainSec.subSections).forEach(sKey => {
-            const subSec = mainSec.subSections[sKey];
+          if (mainSec.subSections.length === 0) {
+            const emptySubTr = document.createElement('tr');
+            emptySubTr.innerHTML = `<td colspan="7" style="padding-left:30px; color:#94a3b8; font-style:italic;">No Sub-sections yet. Click "+ Sub-Section" on section bar above to create one.</td>`;
+            tbody.appendChild(emptySubTr);
+          }
+
+          mainSec.subSections.forEach((subSec, sIdx) => {
             let subTotal = 0;
             subSec.items.forEach(i => subTotal += (i.qty * i.rate));
 
@@ -353,21 +295,22 @@
             subTr.innerHTML = `
               <td style="padding-left:15px;">${subSec.num}</td>
               <td colspan="4">
-                <span class="toggle-icon" onclick="toggleSub('${mKey}', '${sKey}')">${subSec.expanded ? '▼' : '►'}</span>
-                <strong>${subSec.title}</strong>
-                <button class="btn-add-sub" onclick="openAddItemsModal('${mKey}', '${sKey}')">+ Add Items</button>
+                <span class="toggle-icon" onclick="toggleSub(${mIdx}, ${sIdx})">${subSec.expanded ? '▼' : '►'}</span>
+                <strong class="editable-cell" onclick="makeEditableSectionTitle(this, ${mIdx}, ${sIdx}, 'sub')">${subSec.title}</strong>
+                <button class="btn-inline-add-sub" onclick="addCustomItem(${mIdx}, ${sIdx})">+ Custom Item</button>
+                <button class="btn-inline-preset" onclick="openAddItemsModal(${mIdx}, ${sIdx})">+ Presets</button>
               </td>
               <td style="text-align:right;">${formatCurr(subTotal)}</td>
-              <td></td>
+              <td class="btn-del" onclick="deleteSubSection(${mIdx}, ${sIdx})" title="Delete Sub-Section">✕</td>
             `;
             tbody.appendChild(subTr);
 
-            // Render Level 3: Line Items
+            // Render Items
             if (subSec.expanded) {
               if (subSec.items.length === 0) {
-                const emptyTr = document.createElement('tr');
-                emptyTr.innerHTML = `<td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic; padding:6px;">No items in ${subSec.title}. Click "+ Add Items" above to add scope.</td>`;
-                tbody.appendChild(emptyTr);
+                const emptyItemTr = document.createElement('tr');
+                emptyItemTr.innerHTML = `<td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic; padding:6px;">No items in section. Click "+ Custom Item" or "+ Presets" above.</td>`;
+                tbody.appendChild(emptyItemTr);
               } else {
                 subSec.items.forEach((item, iIdx) => {
                   const itemTotal = item.qty * item.rate;
@@ -375,12 +318,12 @@
                   itemTr.className = 'row-item';
                   itemTr.innerHTML = `
                     <td style="text-align:center; color:var(--text-secondary);">${iIdx + 1}</td>
-                    <td class="editable-cell" style="text-align:left;" onclick="makeEditableText(this, '${mKey}', '${sKey}', ${iIdx}, 'desc')">${item.desc}</td>
-                    <td align="center">${item.unit}</td>
-                    <td class="editable-cell" onclick="makeEditableNumber(this, '${mKey}', '${sKey}', ${iIdx}, 'qty')">${item.qty.toLocaleString()}</td>
-                    <td class="editable-cell" onclick="makeEditableNumber(this, '${mKey}', '${sKey}', ${iIdx}, 'rate')">${formatCurr(item.rate)}</td>
+                    <td class="editable-cell" onclick="makeEditableItemText(this, ${mIdx}, ${sIdx}, ${iIdx}, 'desc')">${item.desc}</td>
+                    <td align="center" class="editable-cell" onclick="makeEditableItemText(this, ${mIdx}, ${sIdx}, ${iIdx}, 'unit')">${item.unit}</td>
+                    <td class="editable-cell" style="text-align:right;" onclick="makeEditableItemNumber(this, ${mIdx}, ${sIdx}, ${iIdx}, 'qty')">${item.qty.toLocaleString()}</td>
+                    <td class="editable-cell" style="text-align:right;" onclick="makeEditableItemNumber(this, ${mIdx}, ${sIdx}, ${iIdx}, 'rate')">${formatCurr(item.rate)}</td>
                     <td style="text-align:right; font-weight:bold; color:#1e3a8a;">${formatCurr(itemTotal)}</td>
-                    <td class="btn-del" onclick="deleteItem('${mKey}', '${sKey}', ${iIdx})" title="Delete Item">✕</td>
+                    <td class="btn-del" onclick="deleteItem(${mIdx}, ${sIdx}, ${iIdx})" title="Delete Line Item">✕</td>
                   `;
                   tbody.appendChild(itemTr);
                 });
@@ -390,52 +333,83 @@
         }
       });
 
-      // Update Dashboard Totals
-      document.getElementById('sum-sub-struct').innerText = formatCurr(subStructTotal);
-      document.getElementById('sum-super-struct').innerText = formatCurr(superStructTotal);
       document.getElementById('grand-total-val').innerText = formatCurr(grandTotal);
-
-      updateChart(subStructTotal, superStructTotal);
+      updateChart(chartLabels, chartData);
     }
 
-    function toggleMain(mKey) {
-      boqData[mKey].expanded = !boqData[mKey].expanded;
+    /* Dynamic Adding Controls */
+    function promptAddMainSection() {
+      const name = prompt("Enter Main Section Title (e.g. SUB-STRUCTURAL WORK, ARCHITECTURAL WORK):");
+      if (name && name.trim()) {
+        const romanNumeral = toRoman(boqData.length + 1);
+        boqData.push({
+          num: romanNumeral,
+          title: name.trim().toUpperCase(),
+          expanded: true,
+          subSections: []
+        });
+        renderBOQTable();
+        showToast(`Main Section "${name}" added.`);
+      }
+    }
+
+    function promptAddSubSection(mIdx) {
+      const name = prompt("Enter Sub-Section Title (e.g. PILING WORK, GROUND FLOOR):");
+      if (name && name.trim()) {
+        const charCode = String.fromCharCode(65 + boqData[mIdx].subSections.length); // A, B, C...
+        boqData[mIdx].subSections.push({
+          num: charCode,
+          title: name.trim().toUpperCase(),
+          expanded: true,
+          items: []
+        });
+        renderBOQTable();
+        showToast(`Sub-Section "${name}" added.`);
+      }
+    }
+
+    function addCustomItem(mIdx, sIdx) {
+      boqData[mIdx].subSections[sIdx].items.push({
+        desc: "New Item Description",
+        unit: "m³",
+        qty: 0,
+        rate: 0
+      });
       renderBOQTable();
     }
 
-    function toggleSub(mKey, sKey) {
-      boqData[mKey].subSections[sKey].expanded = !boqData[mKey].subSections[sKey].expanded;
-      renderBOQTable();
-    }
-
-    /* Add Items Modal */
-    function openAddItemsModal(mKey, sKey) {
-      activeTarget = { mainKey: mKey, subKey: sKey };
-      const subSec = boqData[mKey].subSections[sKey];
-      document.getElementById('modal-title').innerText = `Add Scope Items to: ${mainKeyName(mKey)} → ${subSec.title}`;
+    function openAddItemsModal(mIdx, sIdx) {
+      activeTarget = { mIdx, sIdx };
+      const subSec = boqData[mIdx].subSections[sIdx];
+      document.getElementById('modal-title').innerText = `Import Presets into: ${subSec.title}`;
 
       const listContainer = document.getElementById('modal-items-list');
       listContainer.innerHTML = '';
 
-      // Check if presets exist in library
-      const libraryPreset = excelScopeLibrary[mKey]?.subSections[sKey]?.items || [];
+      let foundKey = Object.keys(presetLibrary).find(k => subSec.title.includes(k) || k.includes(subSec.title));
+      let presetItems = foundKey ? presetLibrary[foundKey] : [];
 
-      if (libraryPreset.length > 0) {
-        libraryPreset.forEach((item, idx) => {
-          const rowDiv = document.createElement('div');
-          rowDiv.className = 'scope-item-row';
-          rowDiv.innerHTML = `
-            <label>
-              <input type="checkbox" class="chk-modal-item" data-desc="${item.desc}" data-unit="${item.unit}">
-              <span>${item.desc}</span>
-            </label>
-            <span style="font-weight:bold; color:var(--text-secondary);">[${item.unit}]</span>
-          `;
-          listContainer.appendChild(rowDiv);
-        });
-      } else {
-        listContainer.innerHTML = `<p style="color:#94a3b8;">No presets found for this subsection.</p>`;
+      if (presetItems.length === 0) {
+        // Fallback default sample items if section title isn't in default key map
+        presetItems = [
+          { desc: "General Specification Item 1", unit: "m²" },
+          { desc: "General Specification Item 2", unit: "m³" },
+          { desc: "Supply & Install Material Item", unit: "nos" }
+        ];
       }
+
+      presetItems.forEach((item) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'scope-item-row';
+        rowDiv.innerHTML = `
+          <label>
+            <input type="checkbox" class="chk-modal-item" data-desc="${item.desc}" data-unit="${item.unit}">
+            <span>${item.desc}</span>
+          </label>
+          <span style="font-weight:bold; color:var(--text-secondary);">[${item.unit}]</span>
+        `;
+        listContainer.appendChild(rowDiv);
+      });
 
       document.getElementById('chk-select-all').checked = false;
       document.getElementById('add-scope-modal').style.display = 'flex';
@@ -447,93 +421,121 @@
 
     function confirmAddSelectedItems() {
       const checked = document.querySelectorAll('.chk-modal-item:checked');
-      if (checked.length === 0) {
-        alert("Please select at least one item.");
-        return;
-      }
+      if (checked.length === 0) return alert("Select at least one item.");
 
-      let count = 0;
       checked.forEach(chk => {
-        const desc = chk.getAttribute('data-desc');
-        const unit = chk.getAttribute('data-unit');
-
-        boqData[activeTarget.mainKey].subSections[activeTarget.subKey].items.push({
-          desc: desc,
-          unit: unit,
+        boqData[activeTarget.mIdx].subSections[activeTarget.sIdx].items.push({
+          desc: chk.getAttribute('data-desc'),
+          unit: chk.getAttribute('data-unit'),
           qty: 0,
           rate: 0
         });
-        count++;
       });
 
       closeModal();
       renderBOQTable();
-      showToast(`Added ${count} items successfully!`);
+      showToast(`Added items successfully!`);
     }
 
     function closeModal() {
       document.getElementById('add-scope-modal').style.display = 'none';
     }
 
-    function deleteItem(mKey, sKey, iIdx) {
-      if (confirm("Remove this item?")) {
-        boqData[mKey].subSections[sKey].items.splice(iIdx, 1);
+    /* Deletion Logic */
+    function deleteMainSection(mIdx) {
+      if (confirm(`Delete Main Section "${boqData[mIdx].title}" and all its contents?`)) {
+        boqData.splice(mIdx, 1);
+        reindexStructure();
         renderBOQTable();
       }
     }
 
-    function clearBOQ() {
-      if (confirm("Clear all items and make BOQ blank?")) {
-        Object.keys(boqData).forEach(mKey => {
-          Object.keys(boqData[mKey].subSections).forEach(sKey => {
-            boqData[mKey].subSections[sKey].items = [];
-          });
-        });
-        localStorage.removeItem('boq_structure_hierarchical');
+    function deleteSubSection(mIdx, sIdx) {
+      if (confirm(`Delete Sub-Section "${boqData[mIdx].subSections[sIdx].title}"?`)) {
+        boqData[mIdx].subSections.splice(sIdx, 1);
+        reindexStructure();
         renderBOQTable();
-        showToast("BOQ cleared to blank state.");
       }
     }
 
-    /* Editable Cells & Helpers */
-    function formatCurr(val) {
-      return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function mainKeyName(mKey) {
-      return mKey === 'I' ? 'SUB-STRUCTURAL WORK' : 'SUPER STRUCTURAL WORK';
-    }
-
-    function makeEditableNumber(cell, mKey, sKey, iIdx, field) {
-      if (cell.querySelector('input')) return;
-      const val = boqData[mKey].subSections[sKey].items[iIdx][field];
-      cell.innerHTML = `<input type="number" value="${val}" step="any" onblur="saveCell(this, '${mKey}', '${sKey}', ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
-      cell.querySelector('input').focus();
-    }
-
-    function makeEditableText(cell, mKey, sKey, iIdx, field) {
-      if (cell.querySelector('input')) return;
-      const val = boqData[mKey].subSections[sKey].items[iIdx][field];
-      cell.innerHTML = `<input type="text" value="${val}" style="width:100%; text-align:left;" onblur="saveCell(this, '${mKey}', '${sKey}', ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
-      cell.querySelector('input').focus();
-    }
-
-    function saveCell(input, mKey, sKey, iIdx, field) {
-      const val = field === 'desc' ? input.value : (parseFloat(input.value) || 0);
-      boqData[mKey].subSections[sKey].items[iIdx][field] = val;
+    function deleteItem(mIdx, sIdx, iIdx) {
+      boqData[mIdx].subSections[sIdx].items.splice(iIdx, 1);
       renderBOQTable();
     }
 
+    function clearBOQ() {
+      if (confirm("Clear all sections and start with a completely blank BOQ?")) {
+        boqData = [];
+        localStorage.removeItem('boq_structure_dynamic');
+        renderBOQTable();
+        showToast("BOQ reset to blank state.");
+      }
+    }
+
+    function reindexStructure() {
+      boqData.forEach((m, idx) => {
+        m.num = toRoman(idx + 1);
+        m.subSections.forEach((s, sIdx) => {
+          s.num = String.fromCharCode(65 + sIdx);
+        });
+      });
+    }
+
+    /* Editing Functions */
+    function makeEditableSectionTitle(cell, mIdx, sIdx, level) {
+      if (cell.querySelector('input')) return;
+      const currentText = level === 'main' ? boqData[mIdx].title : boqData[mIdx].subSections[sIdx].title;
+      cell.innerHTML = `<input type="text" value="${currentText}" style="color:black;" onblur="saveSectionTitle(this, ${mIdx}, ${sIdx}, '${level}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      cell.querySelector('input').focus();
+    }
+
+    function saveSectionTitle(input, mIdx, sIdx, level) {
+      const val = input.value.trim().toUpperCase() || "UNTITLED SECTION";
+      if (level === 'main') boqData[mIdx].title = val;
+      else boqData[mIdx].subSections[sIdx].title = val;
+      renderBOQTable();
+    }
+
+    function makeEditableItemNumber(cell, mIdx, sIdx, iIdx, field) {
+      if (cell.querySelector('input')) return;
+      const val = boqData[mIdx].subSections[sIdx].items[iIdx][field];
+      cell.innerHTML = `<input type="number" value="${val}" step="any" onblur="saveItemCell(this, ${mIdx}, ${sIdx}, ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      cell.querySelector('input').focus();
+    }
+
+    function makeEditableItemText(cell, mIdx, sIdx, iIdx, field) {
+      if (cell.querySelector('input')) return;
+      const val = boqData[mIdx].subSections[sIdx].items[iIdx][field];
+      cell.innerHTML = `<input type="text" value="${val}" onblur="saveItemCell(this, ${mIdx}, ${sIdx}, ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      cell.querySelector('input').focus();
+    }
+
+    function saveItemCell(input, mIdx, sIdx, iIdx, field) {
+      const val = (field === 'qty' || field === 'rate') ? (parseFloat(input.value) || 0) : input.value;
+      boqData[mIdx].subSections[sIdx].items[iIdx][field] = val;
+      renderBOQTable();
+    }
+
+    function toggleMain(mIdx) { boqData[mIdx].expanded = !boqData[mIdx].expanded; renderBOQTable(); }
+    function toggleSub(mIdx, sIdx) { boqData[mIdx].subSections[sIdx].expanded = !boqData[mIdx].subSections[sIdx].expanded; renderBOQTable(); }
+
+    /* Helper Tools */
+    function formatCurr(val) { return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function toRoman(num) {
+      const lookup = { M:1000, CM:900, D:500, CD:400, C:100, XC:90, L:50, XL:40, X:10, IX:9, V:5, IV:4, I:1 };
+      let roman = '', i;
+      for (i in lookup) { while (num >= lookup[i]) { roman += i; num -= lookup[i]; } }
+      return roman;
+    }
+
     function saveToLocalStorage() {
-      localStorage.setItem('boq_structure_hierarchical', JSON.stringify(boqData));
+      localStorage.setItem('boq_structure_dynamic', JSON.stringify(boqData));
       showToast("✅ BOQ Saved!");
     }
 
     function loadLocalStorage() {
-      const saved = localStorage.getItem('boq_structure_hierarchical');
-      if (saved) {
-        try { boqData = JSON.parse(saved); } catch(e) {}
-      }
+      const saved = localStorage.getItem('boq_structure_dynamic');
+      if (saved) { try { boqData = JSON.parse(saved); } catch(e) {} }
     }
 
     function showToast(msg) {
@@ -546,42 +548,33 @@
       const ctx = document.getElementById('structurePieChart').getContext('2d');
       pieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: {
-          labels: ['Sub-Structural Work', 'Super Structural Work'],
-          datasets: [{ data: [0, 0], backgroundColor: ['#1e3a8a', '#059669'] }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
-        }
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#1e3a8a', '#059669', '#d97706', '#7c3aed', '#0284c7'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
       });
     }
 
-    function updateChart(subTotal, superTotal) {
+    function updateChart(labels, data) {
       if (!pieChartInstance) return;
-      pieChartInstance.data.datasets[0].data = [subTotal, superTotal];
+      pieChartInstance.data.labels = labels;
+      pieChartInstance.data.datasets[0].data = data;
       pieChartInstance.update();
     }
 
     function exportToExcel() {
       const data = [["Nº", "DESCRIPTION & SPECIFICATION", "UNIT", "QUANTITY", "UNIT RATE ($)", "AMOUNT ($)"]];
-      
-      Object.keys(boqData).forEach(mKey => {
-        const m = boqData[mKey];
+      boqData.forEach(m => {
         data.push([m.num, m.title, "", "", "", ""]);
-        Object.keys(m.subSections).forEach(sKey => {
-          const s = m.subSections[sKey];
+        m.subSections.forEach(s => {
           data.push([s.num, s.title, "", "", "", ""]);
           s.items.forEach((i, idx) => {
             data.push([idx + 1, i.desc, i.unit, i.qty, i.rate, i.qty * i.rate]);
           });
         });
       });
-
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Structure_BOQ");
-      XLSX.writeFile(wb, "Structure_BOQ_Hierarchical.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, "BOQ_Schedule");
+      XLSX.writeFile(wb, "Dynamic_BOQ_Export.xlsx");
     }
 
     window.onload = () => {
