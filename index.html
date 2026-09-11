@@ -3,660 +3,426 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Green BOQ Pro — Excel Engine</title>
+  <title>ARCHITECHTURES — Cost Engine</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root {
-      --primary: #064e3b;
-      --primary-light: #059669;
-      --accent: #10b981;
-      --bg-light: #f0fdf4;
-      --text-dark: #0f172a;
-      --border: #a7f3d0;
-      --danger: #ef4444;
+      --bg-app: #f4f5f7;
+      --bg-panel: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #0284c7;
+      --accent-green: #84cc16;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg-light); margin: 0; padding: 12px; color: var(--text-dark); }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+    body { background-color: var(--bg-app); color: var(--text-main); font-size: 13px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-    #auth-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(6, 78, 59, 0.95);
-      display: flex; justify-content: center; align-items: center; z-index: 1000;
+    /* Top Navigation Header */
+    header.nav-header {
+      background: #ffffff; border-bottom: 1px solid var(--border-color);
+      display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; height: 48px;
     }
-    .auth-card {
-      background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 380px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 2px solid var(--accent);
-    }
-    .auth-card h2 { color: var(--primary); margin-top: 0; }
-    .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
-    .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .brand-title { font-size: 16px; font-weight: 800; letter-spacing: 1px; color: #000; text-transform: uppercase; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab { padding: 6px 14px; border-radius: 4px; font-weight: 600; cursor: pointer; color: var(--text-muted); text-transform: uppercase; font-size: 11px; }
+    .nav-tab.active { background: #e0f2fe; color: #0369a1; }
+
+    .header-center { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 12px; }
+    .header-center select { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; }
+
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .mode-toggle { display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; background: #f8fafc; }
+    .mode-btn { padding: 4px 10px; font-size: 10px; font-weight: bold; cursor: pointer; border: none; background: transparent; }
+    .mode-btn.active { background: #334155; color: white; }
+
+    .export-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+    .btn-xls { background: #e0f2fe; color: #0369a1; }
+    .btn-cad { background: #fef3c7; color: #b45309; }
+    .btn-bim { background: #dcfce7; color: #15803d; }
+
+    /* Main Grid Layout (3 Columns) */
+    .app-workspace { display: grid; grid-template-columns: 280px 1fr 320px; height: calc(100vh - 48px); overflow: hidden; }
+
+    /* Panel Base */
+    .panel { background: var(--bg-panel); border-right: 1px solid var(--border-color); overflow-y: auto; padding: 12px; }
+    .panel-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+
+    /* Left Sidebar Styling */
+    .sidebar-section { border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #fafafa; }
+    .control-group { margin-bottom: 8px; }
+    .control-label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+    .control-input, .control-select { width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; }
+
+    /* Middle Main Estimate Panel */
+    .main-estimate-panel { padding: 16px; overflow-y: auto; background: #ffffff; }
+    .estimate-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border-color); }
+    .estimate-title { font-weight: 800; font-size: 14px; text-transform: uppercase; }
+
+    /* Category Blocks & Table */
+    .category-block { margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+    .category-header { background: #f8fafc; padding: 10px 14px; font-weight: 700; font-size: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); cursor: pointer; }
     
-    .btn-google {
-      width: 100%; padding: 10px; background: #ffffff; color: #333; border: 1px solid #cbd5e1;
-      border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;
-      display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px;
-    }
-    .btn-google:hover { background: #f8fafc; }
+    table.cost-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+    table.cost-table th { background: #ffffff; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 10px; text-transform: uppercase; }
+    table.cost-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+    table.cost-table tr:hover { background: #f8fafc; }
 
-    .auth-divider {
-      display: flex; align-items: center; text-align: center; margin: 12px 0; color: #64748b; font-size: 12px;
-    }
-    .auth-divider::before, .auth-divider::after {
-      content: ''; flex: 1; border-bottom: 1px solid #cbd5e1;
-    }
-    .auth-divider::before { margin-right: .5em; }
-    .auth-divider::after { margin-left: .5em; }
+    .cell-input { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 4px; text-align: right; font-size: 12px; }
+    .cell-input:hover, .cell-input:focus { border-color: var(--primary); outline: none; background: #fff; }
+    .cell-text { text-align: left; }
 
-    .auth-error {
-      color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; display: none; word-wrap: break-wrap;
-    }
+    /* Right Analytics Panel */
+    .analytics-panel { border-left: 1px solid var(--border-color); border-right: none; background: #ffffff; }
+    .summary-card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+    .summary-val-large { font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 4px; text-align: right; }
+    
+    /* Pie Chart Container */
+    .chart-container { display: flex; justify-content: center; align-items: center; margin: 16px 0; }
+    .pie-chart { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#84cc16 0% 35%, #0284c7 35% 80%, #f59e0b 80% 100%); }
 
-    .app-header {
-      background: var(--primary); color: white; padding: 14px 20px; border-radius: 8px;
-      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
-    }
-    .app-title { margin: 0; font-size: 18px; font-weight: 700; }
-    .user-area { display: flex; align-items: center; gap: 10px; }
-    .user-badge { background: #022c22; color: #a7f3d0; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-    .btn-logout { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    /* Breakdown List */
+    .breakdown-list { margin-top: 12px; }
+    .breakdown-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; }
+    .breakdown-item.bold { font-weight: bold; border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 4px; }
 
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; flex-wrap: wrap; }
-    .btn-action { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-    .btn-save { background: #d97706; }
-    .btn-export { background: #0284c7; }
-    .btn-action:hover { opacity: 0.9; }
-
-    #toast-banner {
-      position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white;
-      padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: bold;
-      display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2000;
-    }
-
-    .excel-container {
-      background: white; border: 1px solid var(--border); border-radius: 8px;
-      overflow-x: auto; box-shadow: 0 2px 6px rgba(6, 78, 59, 0.05); margin-bottom: 20px;
-    }
-    table.excel-grid { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    table.excel-grid th { background: #d1fae5; color: var(--primary); padding: 10px; border: 1px solid var(--border); font-weight: bold; }
-    table.excel-grid td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; }
-
-    tr.category-header-row td {
-      background: var(--primary); color: white; font-weight: bold; font-size: 15px; padding: 10px;
-    }
-
-    input.excel-input {
-      width: 100%; padding: 6px; border: 1px solid transparent; border-radius: 4px;
-      font-size: 14px; background: transparent; text-align: right; font-weight: 500;
-    }
-    input.excel-input:hover, input.excel-input:focus {
-      border-color: var(--primary-light); background: #f0fdf4; outline: none;
-    }
-    input.excel-text { text-align: left; }
-
-    input.remark-input {
-      width: 100%; margin-top: 4px; padding: 4px 6px; font-size: 12px;
-      border: 1px dashed #cbd5e1; border-radius: 4px; color: #475569; background: #f8fafc;
-    }
-    input.remark-input:focus { border-color: var(--primary-light); background: #ffffff; outline: none; }
-
-    .btn-remove { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-
-    #modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 500;
-    }
-    .modal-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 420px; border-top: 6px solid var(--primary-light); }
-    .modal-select, .modal-input { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-
-    .summary-box { background: var(--primary); color: white; padding: 16px; border-radius: 8px; margin-top: 20px; }
-    .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-    .grand-total { font-size: 18px; font-weight: bold; border-top: 1px solid var(--accent); padding-top: 10px; color: #a7f3d0; }
+    /* Notifications Toast */
+    #toast-banner { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 10px 16px; border-radius: 6px; font-size: 12px; display: none; z-index: 2000; }
   </style>
 </head>
 <body>
 
-  <!-- FIREBASE ENGINE -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, 
-      signInWithPopup,
-      GoogleAuthProvider,
-      signOut, 
-      onAuthStateChanged,
-      updateProfile 
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { 
-      getFirestore, 
-      doc, 
-      getDoc, 
-      setDoc 
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  <!-- Top Navigation Header Bar -->
+  <header class="nav-header">
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <span class="brand-title">ARCHITECHTURES</span>
+      <div class="nav-tabs">
+        <div class="nav-tab">Plans</div>
+        <div class="nav-tab">Model</div>
+        <div class="nav-tab active">Cost</div>
+      </div>
+    </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC4hWM0gh-CaDDuKE5rV2bP4JG8VcsY-aM",
-      authDomain: "boq-build-app.firebaseapp.com",
-      projectId: "boq-build-app",
-      storageBucket: "boq-build-app.firebasestorage.app",
-      messagingSenderId: "1025455407739",
-      appId: "1:1025455407739:web:70d01189d976ba3ca718de",
-      measurementId: "G-8KS68FXEJC"
-    };
+    <div class="header-center">
+      <span>↑ DES BASTOGNES 84</span>
+      <span>|</span>
+      <select id="grade-view">
+        <option>Above Grade ∨</option>
+        <option>Below Grade ∨</option>
+        <option>Full View ∨</option>
+      </select>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const googleProvider = new GoogleAuthProvider();
+    <div class="header-right">
+      <div style="font-size: 11px; color: var(--text-muted); margin-right: 6px;">Edit Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active">AUTO</button>
+        <button class="mode-btn">MANUAL</button>
+        <button class="mode-btn">READONLY</button>
+      </div>
+      <button class="export-badge btn-xls" onclick="exportToExcel()">XLS ▷</button>
+      <button class="export-badge btn-cad">CADD ▷</button>
+      <button class="export-badge btn-bim">BIM ▷</button>
+    </div>
+  </header>
 
-    window.firebaseApp = app;
-    window.auth = auth;
-    window.db = db;
-    window.currentUser = null;
+  <!-- Workspace Shell (3 Panels) -->
+  <div class="app-workspace">
+    
+    <!-- LEFT CONTROL SIDEBAR -->
+    <div class="panel">
+      <div class="sidebar-section">
+        <div class="panel-title">▲ PRESETS</div>
+        <div class="control-group">
+          <label class="control-label">Preset panel</label>
+          <select class="control-select"><option>Select Preset ∨</option></select>
+        </div>
+      </div>
 
-    window.showToast = (msg, isError = false) => {
-      const toast = document.getElementById('toast-banner');
-      toast.innerText = msg;
-      toast.style.background = isError ? '#ef4444' : '#059669';
-      toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 4000);
-    };
+      <div class="sidebar-section">
+        <div class="panel-title">▲ CURRENCY</div>
+        <div class="control-group">
+          <label class="control-label">Currency</label>
+          <select class="control-select" id="currency-select" onchange="updateCurrency()">
+            <option value="EUR">Euro (EUR) - €</option>
+            <option value="USD">US Dollar (USD) - $</option>
+            <option value="GBP">Pound (GBP) - £</option>
+          </select>
+        </div>
+      </div>
 
-    onAuthStateChanged(auth, async (user) => {
-      const overlay = document.getElementById('auth-overlay');
-      const userDisplay = document.getElementById('user-display');
+      <div class="sidebar-section">
+        <div class="panel-title">▼ SITE WORKS</div>
+      </div>
 
-      if (user) {
-        window.currentUser = user;
-        const displayName = user.displayName || user.email.split('@')[0];
-        userDisplay.innerText = `Logged In: ${displayName}`;
-        overlay.style.display = 'none';
+      <div class="sidebar-section">
+        <div class="panel-title">▲ FOUNDATIONS</div>
+        <div class="control-group">
+          <label class="control-label">Preset group</label>
+          <select class="control-select"><option>Select Preset ∨</option></select>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Foundation excavation, fill & grading</label>
+          <input type="text" class="control-input" value="21.00 €/m³" disabled>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Foundation construction (piling, caissons, etc.)</label>
+          <input type="text" class="control-input" value="95.00 €/m³" disabled>
+        </div>
+      </div>
 
-        await loadUserBOQData(user.uid);
-      } else {
-        window.currentUser = null;
-        userDisplay.innerText = `Logged In: Guest`;
-        overlay.style.display = 'flex';
-        clearGrid();
-      }
-    });
+      <div class="sidebar-section">
+        <div class="panel-title">▲ STRUCTURES</div>
+        <div class="control-group">
+          <label class="control-label">Beams and trusses</label>
+          <input type="text" class="control-input" value="95.00 €/lm" disabled>
+        </div>
+        <div class="control-group">
+          <label class="control-label">Columns</label>
+          <input type="text" class="control-input" value="43.00 €/lm" disabled>
+        </div>
+      </div>
+    </div>
 
-    window.saveUserBOQData = async () => {
-      if (!window.currentUser) {
-        window.showToast("You must be logged in to save data.", true);
-        return;
-      }
+    <!-- MIDDLE ESTIMATE GRID TABLE -->
+    <div class="main-estimate-panel">
+      <div class="estimate-top-bar">
+        <span class="estimate-title">ABOVE GRADE ESTIMATE</span>
+        <span class="estimate-title" id="above-grade-total">0.00 €</span>
+      </div>
+
+      <!-- 50 - SITE WORKS -->
+      <div class="category-block">
+        <div class="category-header">
+          <span>▲ 50 - SITE WORKS</span>
+          <span id="cat-50-total">0.00 €</span>
+        </div>
+        <table class="cost-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">CODE</th>
+              <th>DESCRIPTION</th>
+              <th style="width: 100px; text-align: right;">QUANTITY</th>
+              <th style="width: 100px; text-align: right;">COST</th>
+              <th style="width: 120px; text-align: right;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody id="sec-siteworks">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 02 - FOUNDATIONS -->
+      <div class="category-block">
+        <div class="category-header">
+          <span>▲ 02 - FOUNDATIONS</span>
+          <span id="cat-02-total">0.00 €</span>
+        </div>
+        <table class="cost-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">CODE</th>
+              <th>DESCRIPTION</th>
+              <th style="width: 100px; text-align: right;">QUANTITY</th>
+              <th style="width: 100px; text-align: right;">COST</th>
+              <th style="width: 120px; text-align: right;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody id="sec-foundations">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 03 - STRUCTURES -->
+      <div class="category-block">
+        <div class="category-header">
+          <span>▲ 03 - STRUCTURES</span>
+          <span id="cat-03-total">0.00 €</span>
+        </div>
+        <table class="cost-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">CODE</th>
+              <th>DESCRIPTION</th>
+              <th style="width: 100px; text-align: right;">QUANTITY</th>
+              <th style="width: 100px; text-align: right;">COST</th>
+              <th style="width: 120px; text-align: right;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody id="sec-structures">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT ANALYTICS & SUMMARY PANEL -->
+    <div class="panel analytics-panel">
+      <div class="panel-title">▲ ESTIMATE SUMMARY</div>
       
-      const uid = window.currentUser.uid;
-      const saveBtn = document.getElementById('btn-save-cloud');
-      saveBtn.innerText = "⏳ Saving...";
-      saveBtn.disabled = true;
+      <div class="summary-card">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
+          <span>TOTAL PROJECT ESTIMATE (<span class="curr-symbol">€</span>)</span>
+        </div>
+        <div class="summary-val-large" id="summary-grand-total">0.00</div>
+        
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:8px; color:var(--text-muted);">
+          <span>Target total (<span class="curr-symbol">€</span>)</span>
+          <span>0.00</span>
+        </div>
+      </div>
 
-      const items = [];
-      const rows = document.querySelectorAll('.item-data-row');
-      rows.forEach(row => {
-        items.push({
-          category: row.dataset.category,
-          desc: row.querySelector('.item-desc').value,
-          remark: row.querySelector('.item-remark').value,
-          unit: row.querySelector('.item-unit').value,
-          qty: parseFloat(row.querySelector('.item-qty').value) || 0,
-          rate: parseFloat(row.querySelector('.item-rate').value) || 0
-        });
-      });
+      <!-- PIE CHART GRAPHIC -->
+      <div class="chart-container">
+        <div class="pie-chart"></div>
+      </div>
 
-      try {
-        await setDoc(doc(db, "user_boqs", uid), {
-          userEmail: window.currentUser.email,
-          updatedAt: new Date().toISOString(),
-          items: items
-        });
-        window.showToast("✅ BOQ saved successfully to your cloud account!");
-      } catch (err) {
-        console.error("Firestore Save Error:", err);
-        window.showToast("❌ Save Failed: " + err.message, true);
-      } finally {
-        saveBtn.innerText = "☁️ Save BOQ to Cloud";
-        saveBtn.disabled = false;
-      }
-    };
+      <!-- COST BREAKDOWN HIERARCHY -->
+      <div class="panel-title" style="margin-top: 16px;">ESTIMATE BREAKDOWN (<span class="curr-symbol">€</span>)</div>
+      <div class="breakdown-list">
+        <div class="breakdown-item bold"><span>CONCEPT</span><span>TOTAL</span></div>
+        <div class="breakdown-item bold"><span>Above grade estimate</span><span id="bk-above">0.00</span></div>
+        <div class="breakdown-item" style="padding-left:10px;"><span>• Site Works</span><span id="bk-site">0.00</span></div>
+        <div class="breakdown-item" style="padding-left:10px;"><span>• Building</span><span id="bk-building">0.00</span></div>
+        
+        <div class="breakdown-item bold" style="margin-top:8px;"><span>Below grade estimate</span><span id="bk-below">0.00</span></div>
+        <div class="breakdown-item bold"><span>General Conditions</span><span id="bk-general">0.00</span></div>
+        <div class="breakdown-item bold"><span>Overhead, Profit</span><span id="bk-overhead">0.00</span></div>
+        <div class="breakdown-item bold"><span>Soft Costs</span><span id="bk-soft">0.00</span></div>
+      </div>
 
-    async function loadUserBOQData(uid) {
-      clearGrid();
-      try {
-        const docRef = doc(db, "user_boqs", uid);
-        const docSnap = await getDoc(docRef);
+      <div class="panel-title" style="margin-top: 20px;">RATIOS</div>
+      <div class="breakdown-list">
+        <div class="breakdown-item"><span>ENCC / Units</span><span id="ratio-encc">0.00 €/u</span></div>
+      </div>
+    </div>
 
-        if (docSnap.exists() && docSnap.data().items && docSnap.data().items.length > 0) {
-          const items = docSnap.data().items;
-          items.forEach(item => {
-            renderGridRow(item.category, item.desc, item.remark, item.unit, item.qty, item.rate);
-          });
-          window.showToast("Welcome back! Saved BOQ loaded.");
-        } else {
-          window.confirmAddItemWithParams("Architectural Works", "Floor Tiles (60x60 Porcelain)", "", "m²", 0, 25.00);
-        }
-        calculateBOQ();
-      } catch (err) {
-        console.error("Firestore Load Error:", err);
-        window.confirmAddItemWithParams("Architectural Works", "Floor Tiles (60x60 Porcelain)", "", "m²", 0, 25.00);
-      }
-    }
-
-    window.firebaseGoogleAuth = async () => {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (error) {
-        const errorElem = document.getElementById('signin-error');
-        errorElem.innerText = error.message.replace('Firebase: ', '');
-        errorElem.style.display = 'block';
-      }
-    };
-
-    window.firebaseSignUp = async (displayName, email, password) => {
-      const errorElem = document.getElementById('signup-error');
-      errorElem.style.display = 'none';
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        if (displayName) {
-          await updateProfile(userCredential.user, { displayName: displayName });
-        }
-      } catch (error) {
-        errorElem.innerText = error.message.replace('Firebase: ', '');
-        errorElem.style.display = 'block';
-      }
-    };
-
-    window.firebaseSignIn = async (email, password) => {
-      const errorElem = document.getElementById('signin-error');
-      errorElem.style.display = 'none';
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        errorElem.innerText = error.message.replace('Firebase: ', '');
-        errorElem.style.display = 'block';
-      }
-    };
-
-    window.firebaseSignOut = async () => {
-      try {
-        await signOut(auth);
-      } catch (error) {
-        console.error("Logout Error:", error);
-      }
-    };
-  </script>
-
-  <datalist id="unit-options">
-    <option value="m²"></option>
-    <option value="m³"></option>
-    <option value="m"></option>
-    <option value="Kg"></option>
-    <option value="Ton"></option>
-    <option value="Set"></option>
-    <option value="Lot"></option>
-    <option value="Pcs"></option>
-  </datalist>
+  </div>
 
   <div id="toast-banner">Notification</div>
 
-  <div id="auth-overlay">
-    <div class="auth-card" id="signin-box">
-      <h2>Sign In — BOQ Engine</h2>
-      <button class="btn-google" onclick="window.firebaseGoogleAuth()">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        Sign in with Google
-      </button>
-
-      <div class="auth-divider">OR</div>
-
-      <input type="email" class="auth-input" id="auth-email-in" placeholder="Email Address">
-      <input type="password" class="auth-input" id="auth-pass-in" placeholder="Password">
-      <button class="btn-auth" onclick="handleSignIn()">Sign In with Email</button>
-      <div id="signin-error" class="auth-error"></div>
-      <p style="font-size: 12px; text-align: center; margin-top: 12px;">Don't have an account? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign Up</a></p>
-    </div>
-
-    <div class="auth-card" id="signup-box" style="display:none;">
-      <h2>Create Account</h2>
-      <button class="btn-google" onclick="window.firebaseGoogleAuth()">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        Sign up with Google
-      </button>
-
-      <div class="auth-divider">OR</div>
-
-      <input type="text" class="auth-input" id="auth-name-up" placeholder="Full Name">
-      <input type="email" class="auth-input" id="auth-email-up" placeholder="Email Address">
-      <input type="password" class="auth-input" id="auth-pass-up" placeholder="Password (min. 6 characters)">
-      <button class="btn-auth" onclick="handleSignUp()">Sign Up with Email</button>
-      <div id="signup-error" class="auth-error"></div>
-      <p style="font-size: 12px; text-align: center; margin-top: 12px;">Already registered? <a href="#" onclick="toggleAuthMode()" style="color: var(--primary-light)">Sign In</a></p>
-    </div>
-  </div>
-
-  <div class="app-header">
-    <div>
-      <h1 class="app-title">BOQ Builder Engine</h1>
-      <small style="opacity: 0.9;">Green Excel Grid Edition</small>
-    </div>
-    <div class="user-area">
-      <span class="user-badge" id="user-display">Logged In: Guest</span>
-      <button class="btn-logout" onclick="handleLogout()">Log Out</button>
-    </div>
-  </div>
-
-  <div class="toolbar">
-    <button class="btn-action" onclick="openAddModal()">+ Add Item / Custom Item</button>
-    <button class="btn-action btn-save" id="btn-save-cloud" onclick="window.saveUserBOQData()">☁️ Save BOQ to Cloud</button>
-    <button class="btn-action btn-export" onclick="exportToExcel()">📊 Export to Excel (.xlsx)</button>
-  </div>
-
-  <div class="excel-container">
-    <table class="excel-grid" id="boq-grid-table">
-      <thead>
-        <tr>
-          <th style="width: 70px;">No.</th>
-          <th>Item Description & Remark</th>
-          <th style="width: 100px;">Unit</th>
-          <th style="width: 100px; text-align: right;">Qty</th>
-          <th style="width: 120px; text-align: right;">Unit Rate ($)</th>
-          <th style="width: 130px; text-align: right;">Total ($)</th>
-          <th style="width: 60px; text-align: center;">Action</th>
-        </tr>
-      </thead>
-
-      <tbody id="sec-structure" data-prefix="1">
-        <tr class="category-header-row">
-          <td colspan="7">1.0 STRUCTURE WORKS</td>
-        </tr>
-      </tbody>
-
-      <tbody id="sec-architectural" data-prefix="2">
-        <tr class="category-header-row">
-          <td colspan="7">2.0 ARCHITECTURAL WORKS</td>
-        </tr>
-      </tbody>
-
-      <tbody id="sec-mep" data-prefix="3">
-        <tr class="category-header-row">
-          <td colspan="7">3.0 MEP WORKS (Mechanical, Electrical, Plumbing)</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div id="modal-overlay">
-    <div class="modal-box">
-      <h3 style="margin-top:0; color: var(--primary);">Add BOQ Item</h3>
-
-      <label style="font-size:12px; font-weight:bold;">1. Select Work Category:</label>
-      <select class="modal-select" id="modal-category" onchange="updateSubItemOptions()">
-        <option value="Structure Works">1.0 Structure Works</option>
-        <option value="Architectural Works" selected>2.0 Architectural Works</option>
-        <option value="MEP Works">3.0 MEP Works</option>
-      </select>
-
-      <label style="font-size:12px; font-weight:bold;">2. Select Standard Item OR Type Custom Item:</label>
-      <select class="modal-select" id="modal-subitem" onchange="toggleCustomInput()">
-      </select>
-
-      <div id="custom-item-container" style="display:none;">
-        <label style="font-size:12px; font-weight:bold; color: var(--primary-light);">Type Custom Item Description:</label>
-        <input type="text" class="modal-input" id="custom-item-name" placeholder="e.g., Decorative Timber Wall Slats">
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 8px;">
-        <button onclick="closeAddModal()" style="padding: 8px 12px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-        <button onclick="confirmAddItem()" style="padding: 8px 12px; background: var(--primary-light); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Add to Grid</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="summary-box">
-    <div class="summary-row">
-      <span>Sub-Total:</span>
-      <span id="summary-subtotal">$0.00</span>
-    </div>
-    <div class="summary-row">
-      <span>Contingency (5%):</span>
-      <span id="summary-contingency">$0.00</span>
-    </div>
-    <div class="summary-row">
-      <span>VAT (10%):</span>
-      <span id="summary-vat">$0.00</span>
-    </div>
-    <div class="summary-row grand-total">
-      <span>GRAND TOTAL:</span>
-      <span id="summary-grandtotal">$0.00</span>
-    </div>
-  </div>
-
   <script>
-    let rowCounter = 0;
+    let currentSymbol = '€';
 
-    let categoryCounters = {
-      "Structure Works": 0,
-      "Architectural Works": 0,
-      "MEP Works": 0
-    };
+    const defaultItems = [
+      // Site Works
+      { sec: 'sec-siteworks', code: '50.01', desc: 'Site clearing/demolition, tree removal, etc.', qty: 0, unit: 'm²', cost: 0 },
+      { sec: 'sec-siteworks', code: '50.02', desc: 'Landscaping, irrigation and sprinkler head systems', qty: 0, unit: 'm²', cost: 100 },
+      { sec: 'sec-siteworks', code: '50.03', desc: 'Swimming pool', qty: 0, unit: 'm²', cost: 450 },
+      { sec: 'sec-siteworks', code: '50.04', desc: 'Site enclosure (fences, etc.)', qty: 0, unit: 'lm', cost: 96 },
+      { sec: 'sec-siteworks', code: '50.05', desc: 'Site pedestrian doors', qty: 1, unit: 'unit', cost: 830 },
+      
+      // Foundations
+      { sec: 'sec-foundations', code: '02.01', desc: 'Foundation excavation, fill & grading', qty: 503.50, unit: 'm³', cost: 21 },
+      { sec: 'sec-foundations', code: '02.02', desc: 'Foundation construction (piling, caissons, etc.)', qty: 503.50, unit: 'm³', cost: 95 },
+      
+      // Structures
+      { sec: 'sec-structures', code: '03.01', desc: 'Beams and trusses', qty: 2213.30, unit: 'lm', cost: 95 },
+      { sec: 'sec-structures', code: '03.02', desc: 'Columns', qty: 1931.40, unit: 'lm', cost: 43 },
+      { sec: 'sec-structures', code: '03.03', desc: 'Floor slabs', qty: 13568.22, unit: 'm²', cost: 85 }
+    ];
 
-    const catalogDatabase = {
-      "Structure Works": [
-        "Site Excavation & Backfilling", "Lean Concrete C15/20 (100mm)", "Reinforced Concrete Footings", 
-        "Reinforcement Rebar (Steel Grade 400)", "Formwork & Shoring Supports", "Concrete Columns & Beams (C30/35)",
-        "Waterproofing Membrane for Footings"
-      ],
-      "Architectural Works": [
-        "Floor Tiles (60x60 Porcelain)", "Wall Tiles (30x60 Ceramic)", "Gypsum Board Wall Partition (Double Sided)",
-        "Wall Plastering (Cement Mortar)", "Internal Wall Painting (Emulsion Paint)", "External Wall Painting (Weather Shield)",
-        "Suspended Gypsum Ceiling Board", "Aluminum Framed Fixed Glazing", "Aluminum Sliding Glass Doors",
-        "Solid Timber Doors & Frame", "Roofing Tiles / Metal Roofing Sheet", "Skirting Board (PVC/Wood)"
-      ],
-      "MEP Works": [
-        "Electrical Wiring & PVC Conduit", "LED Downlight Fixtures", "Distribution Panel Board (MCB/MCCB)",
-        "Sanitary Ware (Water Closet & Wash Basin)", "PPR Water Supply Pipes", "PVC Waste & Drain Water Pipes",
-        "Air Conditioning Split Unit (1.5 HP)", "Exhaust Fan Installation", "Fire Alarm & Smoke Detectors"
-      ]
-    };
-
-    function clearGrid() {
-      rowCounter = 0;
-      categoryCounters = { "Structure Works": 0, "Architectural Works": 0, "MEP Works": 0 };
-      document.querySelectorAll('.item-data-row').forEach(el => el.remove());
-      calculateBOQ();
+    function initTable() {
+      defaultItems.forEach((item, idx) => {
+        const tbody = document.getElementById(item.sec);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="color:var(--text-muted); font-weight:600;">${item.code}</td>
+          <td><input type="text" class="cell-input cell-text" value="${item.desc}"></td>
+          <td><input type="number" class="cell-input item-qty" value="${item.qty}" oninput="calculateEstimate()"></td>
+          <td><input type="number" class="cell-input item-cost" value="${item.cost}" oninput="calculateEstimate()"></td>
+          <td style="text-align:right; font-weight:bold;" class="item-total">0.00</td>
+        `;
+        tbody.appendChild(row);
+      });
+      calculateEstimate();
     }
 
-    function renderGridRow(category, description, remark = "", unit = "m²", qty = 0, rate = 25.00) {
-      rowCounter++;
-      categoryCounters[category]++;
+    function calculateEstimate() {
+      let siteTotal = 0;
+      let foundationTotal = 0;
+      let structureTotal = 0;
 
-      const catIndex = (category === "Structure Works") ? 1 : (category === "Architectural Works") ? 2 : 3;
-      const subIndex = String(categoryCounters[category]).padStart(2, '0');
-      const itemSeriesNo = `${catIndex}.${subIndex}`;
-
-      let targetSectionId = "sec-architectural";
-      if (category === "Structure Works") targetSectionId = "sec-structure";
-      if (category === "MEP Works") targetSectionId = "sec-mep";
-
-      const rowHTML = `
-        <tr id="grid-row-${rowCounter}" class="item-data-row" data-category="${category}">
-          <td align="center" style="font-weight:bold; color: var(--primary);">${itemSeriesNo}</td>
-          <td>
-            <input type="text" class="excel-input excel-text item-desc" id="desc-${rowCounter}" value="${description}">
-            <input type="text" class="remark-input item-remark" id="remark-${rowCounter}" value="${remark}" placeholder="+ Add Remark / Specification...">
-          </td>
-          <td><input list="unit-options" class="excel-input item-unit" id="unit-${rowCounter}" value="${unit}"></td>
-          <td><input type="number" class="excel-input item-qty" id="qty-${rowCounter}" placeholder="0" value="${qty || ''}" oninput="calculateBOQ()"></td>
-          <td><input type="number" class="excel-input item-rate" id="rate-${rowCounter}" value="${rate}" oninput="calculateBOQ()"></td>
-          <td align="right" style="font-weight:bold; color: var(--primary-light);" class="item-total" id="total-${rowCounter}">$0.00</td>
-          <td align="center"><button class="btn-remove" onclick="removeGridRow(${rowCounter})">X</button></td>
-        </tr>
-      `;
-
-      document.getElementById(targetSectionId).insertAdjacentHTML('beforeend', rowHTML);
-    }
-
-    window.confirmAddItemWithParams = (category, desc, remark, unit, qty, rate) => {
-      renderGridRow(category, desc, remark, unit, qty, rate);
-    };
-
-    function handleSignIn() {
-      const email = document.getElementById('auth-email-in').value.trim();
-      const pass = document.getElementById('auth-pass-in').value;
-      if (email && pass) { window.firebaseSignIn(email, pass); }
-    }
-
-    function handleSignUp() {
-      const name = document.getElementById('auth-name-up').value.trim();
-      const email = document.getElementById('auth-email-up').value.trim();
-      const pass = document.getElementById('auth-pass-up').value;
-      if (email && pass) { window.firebaseSignUp(name, email, pass); }
-    }
-
-    function handleLogout() {
-      window.firebaseSignOut();
-    }
-
-    function toggleAuthMode() {
-      const signin = document.getElementById('signin-box');
-      const signup = document.getElementById('signup-box');
-      document.getElementById('signin-error').style.display = 'none';
-      document.getElementById('signup-error').style.display = 'none';
-      signin.style.display = (signin.style.display === 'none') ? 'block' : 'none';
-      signup.style.display = (signup.style.display === 'none') ? 'block' : 'none';
-    }
-
-    function openAddModal() {
-      updateSubItemOptions();
-      document.getElementById('modal-overlay').style.display = 'flex';
-    }
-
-    function closeAddModal() {
-      document.getElementById('modal-overlay').style.display = 'none';
-    }
-
-    function updateSubItemOptions() {
-      const cat = document.getElementById('modal-category').value;
-      const subSelect = document.getElementById('modal-subitem');
-      subSelect.innerHTML = '';
-
-      catalogDatabase[cat].forEach(item => {
-        let opt = document.createElement('option');
-        opt.value = item;
-        opt.innerText = item;
-        subSelect.appendChild(opt);
+      // Calculate Site Works
+      document.querySelectorAll('#sec-siteworks tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
+        const total = qty * cost;
+        siteTotal += total;
+        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
       });
 
-      let customOpt = document.createElement('option');
-      customOpt.value = "CUSTOM_ITEM";
-      customOpt.innerText = "+ Custom Item (Type manually...)";
-      subSelect.appendChild(customOpt);
-
-      toggleCustomInput();
-    }
-
-    function toggleCustomInput() {
-      const val = document.getElementById('modal-subitem').value;
-      document.getElementById('custom-item-container').style.display = (val === 'CUSTOM_ITEM') ? 'block' : 'none';
-    }
-
-    function confirmAddItem() {
-      const category = document.getElementById('modal-category').value;
-      const subSelectValue = document.getElementById('modal-subitem').value;
-
-      let itemDescription = subSelectValue;
-      if (subSelectValue === 'CUSTOM_ITEM') {
-        itemDescription = document.getElementById('custom-item-name').value || `Custom Item ${rowCounter + 1}`;
-      }
-
-      renderGridRow(category, itemDescription, "", "m²", 0, 25.00);
-      closeAddModal();
-      calculateBOQ();
-    }
-
-    function removeGridRow(id) {
-      const row = document.getElementById(`grid-row-${id}`);
-      if (row) {
-        row.remove();
-        calculateBOQ();
-      }
-    }
-
-    function calculateBOQ() {
-      let subtotal = 0;
-      const dataRows = document.querySelectorAll('.item-data-row');
-
-      dataRows.forEach(row => {
-        const qtyInput = row.querySelector('.item-qty');
-        const rateInput = row.querySelector('.item-rate');
-        const totalElem = row.querySelector('.item-total');
-
-        if (qtyInput && rateInput && totalElem) {
-          const qty = parseFloat(qtyInput.value) || 0;
-          const rate = parseFloat(rateInput.value) || 0;
-          const total = qty * rate;
-          subtotal += total;
-
-          totalElem.innerText = `$${total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        }
+      // Calculate Foundations
+      document.querySelectorAll('#sec-foundations tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
+        const total = qty * cost;
+        foundationTotal += total;
+        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
       });
 
-      let contingency = subtotal * 0.05;
-      let vat = (subtotal + contingency) * 0.10;
-      let grandTotal = subtotal + contingency + vat;
+      // Calculate Structures
+      document.querySelectorAll('#sec-structures tr').forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
+        const total = qty * cost;
+        structureTotal += total;
+        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
+      });
 
-      document.getElementById('summary-subtotal').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summary-contingency').innerText = `$${contingency.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summary-vat').innerText = `$${vat.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summary-grandtotal').innerText = `$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      // Update Section UI
+      document.getElementById('cat-50-total').innerText = `${siteTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
+      document.getElementById('cat-02-total').innerText = `${foundationTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
+      document.getElementById('cat-03-total').innerText = `${structureTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
+
+      const aboveGradeSum = siteTotal + foundationTotal + structureTotal;
+      document.getElementById('above-grade-total').innerText = `${aboveGradeSum.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
+
+      // Update Right Breakdown
+      const softCosts = aboveGradeSum * 0.12;
+      const grandTotal = aboveGradeSum + softCosts;
+
+      document.getElementById('summary-grand-total').innerText = grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('bk-above').innerText = aboveGradeSum.toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('bk-site').innerText = siteTotal.toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('bk-building').innerText = (foundationTotal + structureTotal).toLocaleString('en-US', {minimumFractionDigits: 2});
+      document.getElementById('bk-soft').innerText = softCosts.toLocaleString('en-US', {minimumFractionDigits: 2});
+    }
+
+    function updateCurrency() {
+      const val = document.getElementById('currency-select').value;
+      if (val === 'EUR') currentSymbol = '€';
+      if (val === 'USD') currentSymbol = '$';
+      if (val === 'GBP') currentSymbol = '£';
+
+      document.querySelectorAll('.curr-symbol').forEach(el => el.innerText = currentSymbol);
+      calculateEstimate();
     }
 
     function exportToExcel() {
-      const exportData = [];
-      exportData.push(["No.", "Item Description", "Remark", "Unit", "Qty", "Unit Rate ($)", "Total Amount ($)"]);
-
-      const sections = [
-        { id: "sec-structure", title: "1.0 STRUCTURE WORKS" },
-        { id: "sec-architectural", title: "2.0 ARCHITECTURAL WORKS" },
-        { id: "sec-mep", title: "3.0 MEP WORKS" }
-      ];
-
-      sections.forEach(sec => {
-        const secElem = document.getElementById(sec.id);
-        const rows = secElem.querySelectorAll('.item-data-row');
-
-        if (rows.length > 0) {
-          exportData.push(["", sec.title, "", "", "", "", ""]);
-
-          rows.forEach(row => {
-            const no = row.cells[0].innerText.trim();
-            const desc = row.querySelector('.item-desc').value;
-            const remark = row.querySelector('.item-remark').value;
-            const unit = row.querySelector('.item-unit').value;
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
-            const total = qty * rate;
-
-            exportData.push([no, desc, remark, unit, qty, rate, total]);
-          });
+      const exportData = [["Code", "Description", "Quantity", "Cost", "Total"]];
+      document.querySelectorAll('.cost-table tr').forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length > 0) {
+          const code = row.cells[0].innerText;
+          const desc = inputs[0].value;
+          const qty = parseFloat(inputs[1].value) || 0;
+          const cost = parseFloat(inputs[2].value) || 0;
+          exportData.push([code, desc, qty, cost, qty * cost]);
         }
       });
-
-      const subtotalStr = document.getElementById('summary-subtotal').innerText;
-      const grandTotalStr = document.getElementById('summary-grandtotal').innerText;
-      exportData.push([]);
-      exportData.push(["", "SUB-TOTAL", "", "", "", "", subtotalStr]);
-      exportData.push(["", "GRAND TOTAL (incl. Contingency & VAT)", "", "", "", "", grandTotalStr]);
-
       const worksheet = XLSX.utils.aoa_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "BOQ_Summary");
-      XLSX.writeFile(workbook, "BOQ_Project_Export.xlsx");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Cost_Estimate");
+      XLSX.writeFile(workbook, "ARCHITECHTURES_Cost_Export.xlsx");
     }
+
+    window.onload = initTable;
   </script>
 </body>
 </html>
