@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BOQ Master — Bill of Quantities & Estimator</title>
+  <title>BOQ Master — Hierarchical BOQ Estimator</title>
   
-  <!-- SheetJS & ChartJS Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -13,36 +12,24 @@
     :root {
       --bg-app: #f4f5f8;
       --bg-card: #ffffff;
-      --border-color: #e5e7eb;
+      --border-color: #cbd5e1;
       --text-primary: #0f172a;
       --text-secondary: #64748b;
-      --primary-green: #064e3b;
+      --main-section-bg: #1e3a8a; /* Dark Blue for Main Section */
+      --sub-section-bg: #fef08a;  /* Yellow for Sub-section */
       --accent-green: #059669;
-      --highlight-yellow: #fef08a;
-      --accent-blue: #0284c7;
       --danger: #ef4444;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
-    body { background-color: var(--bg-app); color: var(--text-primary); font-size: 12px; padding: 14px; min-height: 100vh; }
+    body { background-color: var(--bg-app); color: var(--text-primary); font-size: 12px; padding: 14px; }
 
-    /* App Shell */
     .app-container { background: var(--bg-card); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 18px; max-width: 1650px; margin: 0 auto; }
 
     /* Header */
     header.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .brand-title { font-size: 18px; font-weight: 800; color: var(--primary-green); letter-spacing: -0.5px; }
-    .project-badge { background: #d1fae5; color: var(--primary-green); padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; }
-
-    .search-wrapper { position: relative; width: 300px; }
-    .search-wrapper input {
-      width: 100%; padding: 7px 12px 7px 32px; border: 1px solid var(--border-color);
-      border-radius: 18px; background: #f8fafc; font-size: 12px; outline: none; transition: 0.2s;
-    }
-    .search-wrapper input:focus { border-color: var(--accent-green); background: #fff; }
-    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+    .brand-title { font-size: 18px; font-weight: 800; color: #1e3a8a; }
 
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .btn-hdr { padding: 6px 12px; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; }
@@ -51,90 +38,58 @@
     .btn-clear { background: #ef4444; color: white; }
     .btn-hdr:hover { opacity: 0.9; }
 
-    /* Filter Toolbar */
-    .filter-toolbar {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
-      background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;
-    }
-    .filter-group { display: flex; flex-direction: column; gap: 3px; }
-    .filter-group label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
-    .filter-group select, .filter-group input {
-      padding: 6px 8px; border: 1px solid var(--border-color); border-radius: 5px;
-      background: #fff; font-size: 11px; outline: none;
-    }
+    /* Dashboard Grid Layout */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
 
-    /* Dashboard Split Grid */
-    .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
-
-    /* Table Styles */
+    /* Table Hierarchy Styling */
     .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
-    .section-title-bar { background: var(--primary-green); color: white; padding: 10px 14px; font-weight: 700; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
-
     table.boq-table { width: 100%; border-collapse: collapse; text-align: left; }
+    
     table.boq-table th {
       background: #f1f5f9; padding: 8px 10px; font-size: 10px; font-weight: 700; color: var(--text-secondary);
       border-bottom: 1px solid var(--border-color); border-right: 1px solid #e2e8f0; text-transform: uppercase;
     }
-    table.boq-table td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; }
+    table.boq-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; }
 
-    /* Row Hierarchy */
-    .row-wbs-header { background: var(--highlight-yellow) !important; font-weight: 700; color: #1e293b; }
+    /* Hierarchy Row Levels */
+    .row-main-section { background: var(--main-section-bg) !important; color: white !important; font-weight: 800; font-size: 13px; }
+    .row-sub-section { background: var(--sub-section-bg) !important; color: #0f172a !important; font-weight: 700; font-size: 11px; }
     .row-item:hover { background: #f0fdf4; }
-    .toggle-icon { cursor: pointer; display: inline-block; width: 14px; font-weight: bold; }
 
-    /* Add Item Button in Section Header */
-    .btn-add-section {
-      background: var(--accent-green); color: white; border: none; padding: 4px 10px;
+    .toggle-icon { cursor: pointer; display: inline-block; width: 16px; font-weight: bold; }
+
+    .btn-add-sub {
+      background: #059669; color: white; border: none; padding: 3px 8px;
       border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; margin-left: 10px;
     }
-    .btn-add-section:hover { background: var(--primary-green); }
+    .btn-add-sub:hover { background: #047857; }
 
     /* Editable Cells */
     .editable-cell { cursor: pointer; text-align: right; font-weight: 500; }
-    .editable-cell:hover { background: #e0f2fe; border-radius: 4px; }
-    .editable-cell input { width: 80px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid var(--accent-blue); border-radius: 3px; outline: none; }
+    .editable-cell:hover { background: #e0f2fe; }
+    .editable-cell input { width: 80px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid #0284c7; outline: none; }
 
     .btn-del { color: var(--danger); cursor: pointer; font-weight: bold; text-align: center; }
-    .btn-del:hover { opacity: 0.7; }
 
-    /* Analytics Section */
+    /* Sidebar Cards */
     .analytics-col { display: flex; flex-direction: column; gap: 14px; }
     .analytics-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
-    .card-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    .weightage-list { display: flex; flex-direction: column; gap: 8px; }
-    .weightage-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-    .weightage-pill { padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px; background: #e0f2fe; color: var(--accent-blue); }
-
-    .chart-box { height: 170px; position: relative; }
+    .card-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; }
 
     /* Modal Popup */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
     }
-    .modal-card { background: white; border-radius: 8px; width: 750px; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-    .modal-header { font-size: 15px; font-weight: 700; color: var(--primary-green); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    
-    .tabs-nav { display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
-    .tab-btn { padding: 6px 12px; border: 1px solid var(--border-color); border-radius: 4px; background: #f8fafc; font-weight: bold; cursor: pointer; }
-    .tab-btn.active { background: var(--primary-green); color: white; border-color: var(--primary-green); }
+    .modal-card { background: white; border-radius: 8px; width: 700px; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-header { font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; justify-content: space-between; }
+    .modal-body { overflow-y: auto; flex: 1; padding-right: 5px; }
 
-    .tab-content { overflow-y: auto; flex: 1; padding-right: 5px; }
-
-    .scope-group { margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; background: #f8fafc; }
-    .scope-group-title { font-weight: 800; color: var(--primary-green); font-size: 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-    .scope-item-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
-    .scope-item-row:last-child { border-bottom: none; }
-    .scope-item-row label { cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 11px; flex: 1; }
-
-    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-    .form-group label { font-size: 11px; font-weight: bold; color: var(--text-secondary); }
-    .form-group input, .form-group select { padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; outline: none; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+    .scope-item-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; }
+    .scope-item-row label { cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 11px; }
 
     #toast-banner {
-      position: fixed; bottom: 20px; right: 20px; background: var(--primary-green); color: white;
+      position: fixed; bottom: 20px; right: 20px; background: #059669; color: white;
       padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: bold; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000;
     }
   </style>
@@ -143,16 +98,10 @@
 
   <div class="app-container">
     
-    <!-- Header -->
     <header class="dashboard-header">
-      <div class="header-left">
-        <span class="brand-title">BOQ Master Estimator</span>
-        <span class="project-badge">Bill of Quantities Schedule</span>
-      </div>
-
-      <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="global-search" placeholder="Search item description, code..." onkeyup="filterTable()">
+      <div>
+        <span class="brand-title">BOQ Structure Estimator</span>
+        <span style="background:#e0e7ff; color:#1e3a8a; padding:3px 8px; border-radius:12px; font-size:10px; font-weight:bold; margin-left:8px;">Sub-structure & Super-structure Scope</span>
       </div>
 
       <div class="header-actions">
@@ -162,120 +111,53 @@
       </div>
     </header>
 
-    <!-- Filter Control Toolbar -->
-    <div class="filter-toolbar">
-      <div class="filter-group">
-        <label>BOQ Ref No.</label>
-        <input type="text" value="BOQ-EST-2026-001" readonly>
-      </div>
-      <div class="filter-group">
-        <label>WBS Division Filter</label>
-        <select id="wbs-filter" onchange="filterWBS()">
-          <option value="ALL">All Divisions (Structure / Arch / MEP)</option>
-          <option value="1.0 Structure Works">1.0 Structure Works</option>
-          <option value="2.0 Architectural Works">2.0 Architectural Works</option>
-          <option value="3.0 MEP Works">3.0 MEP Works</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Unit Filter</label>
-        <select id="unit-filter" onchange="renderTable()">
-          <option value="ALL">All Units (m², m³, Kg, nos, Lot)</option>
-          <option value="m²">m²</option>
-          <option value="m³">m³</option>
-          <option value="kg">kg</option>
-          <option value="nos">nos</option>
-          <option value="Lot">Lot</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Currency</label>
-        <select id="currency-select"><option value="USD">USD ($)</option></select>
-      </div>
-      <div class="filter-group">
-        <label>Estimation Mode</label>
-        <select><option>Detailed Estimation (BOQ)</option></select>
-      </div>
-    </div>
-
-    <!-- Main Workspace Split -->
     <div class="dashboard-grid">
       
-      <!-- Left Main BOQ Table -->
+      <!-- BOQ Table Workspace -->
       <div>
         <div class="table-container">
-          <div class="section-title-bar">
-            <span>Bill of Quantities — Cost Schedule</span>
-            <span id="grand-total-display">Total Estimate: $0.00</span>
-          </div>
-          
           <table class="boq-table" id="boq-table">
             <thead>
               <tr>
-                <th style="width: 60px;">Code</th>
-                <th>Item Description & Technical Spec</th>
-                <th style="width: 60px; text-align: center;">Unit</th>
-                <th style="text-align: right; width: 100px;">Quantity</th>
-                <th style="text-align: right; width: 110px;">Unit Rate ($)</th>
-                <th style="text-align: right; width: 130px;">Total Amount ($)</th>
-                <th style="text-align: right; width: 90px;">Weight (%)</th>
-                <th style="width: 40px; text-align: center;">Act</th>
+                <th style="width: 50px;">Nº</th>
+                <th>DESCRIPTION & SPECIFICATION</th>
+                <th style="width: 60px; text-align: center;">UNIT</th>
+                <th style="text-align: right; width: 90px;">QTY</th>
+                <th style="text-align: right; width: 100px;">UNIT RATE ($)</th>
+                <th style="text-align: right; width: 120px;">AMOUNT ($)</th>
+                <th style="width: 40px; text-align: center;">ACT</th>
               </tr>
             </thead>
             <tbody id="boq-table-body">
-              <!-- Rendered dynamically -->
+              <!-- Rendered Dynamically -->
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Right Analytics Sidebar -->
+      <!-- Right Dashboard Analytics Sidebar -->
       <div class="analytics-col">
         
-        <!-- Summary Totals Breakdown Card -->
-        <div class="analytics-card" style="background:#f0fdf4; border-color:#a7f3d0;">
-          <div class="card-title" style="color:#064e3b;">BOQ Total Summary</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span>1.0 Structure Works:</span>
-            <strong id="card-struct-sub">$0.00</strong>
+        <div class="analytics-card" style="background:#eff6ff; border-color:#bfdbfe;">
+          <div class="card-title" style="color:#1e3a8a;">Project Total Summary</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>I. Sub-Structural Work:</span>
+            <strong id="sum-sub-struct">$0.00</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span>2.0 Architectural Works:</span>
-            <strong id="card-arch-sub">$0.00</strong>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>II. Super Structural Work:</span>
+            <strong id="sum-super-struct">$0.00</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-            <span>3.0 MEP Works:</span>
-            <strong id="card-mep-sub">$0.00</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-top:8px; color:#064e3b; border-top:1px solid #a7f3d0; padding-top:8px;">
+          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-top:8px; color:#1e3a8a; border-top:1px solid #bfdbfe; padding-top:8px;">
             <span>Grand Total Estimate:</span>
-            <span id="card-grand-total">$0.00</span>
+            <span id="grand-total-val">$0.00</span>
           </div>
         </div>
 
-        <!-- Section Weightage Breakdown -->
         <div class="analytics-card">
-          <div class="card-title">Cost Weightage Breakdown (%)</div>
-          <div class="weightage-list">
-            <div class="weightage-item"><span>1.0 Structure Works</span><span class="weightage-pill" id="weight-struct">0.00%</span></div>
-            <div class="weightage-item"><span>2.0 Architectural Works</span><span class="weightage-pill" id="weight-arch">0.00%</span></div>
-            <div class="weightage-item"><span>3.0 MEP Works</span><span class="weightage-pill" id="weight-mep">0.00%</span></div>
-          </div>
-        </div>
-
-        <!-- Chart 1: Subtotals Comparison -->
-        <div class="analytics-card">
-          <div class="card-title">Division Subtotal Comparison ($)</div>
-          <div class="chart-box">
-            <canvas id="divisionSubtotalChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Chart 2: Division Cost Distribution -->
-        <div class="analytics-card">
-          <div class="card-title">Budget Allocation Chart</div>
-          <div class="chart-box">
-            <canvas id="divisionPieChart"></canvas>
+          <div class="card-title">Sub-structure vs Super-structure Breakdown</div>
+          <div style="height: 200px; position: relative;">
+            <canvas id="structurePieChart"></canvas>
           </div>
         </div>
 
@@ -285,62 +167,26 @@
 
   </div>
 
-  <!-- Modal Form for Adding Scope Items -->
-  <div class="modal-overlay" id="add-item-modal">
+  <!-- Modal for Selecting Scope Items -->
+  <div class="modal-overlay" id="add-scope-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <span id="modal-target-section">Add Items / Select Scope</span>
+        <span id="modal-title">Select Items to Add</span>
         <span style="cursor:pointer; font-size:16px;" onclick="closeModal()">✕</span>
       </div>
       
-      <div class="tabs-nav">
-        <button class="tab-btn active" id="tab-preset-btn" onclick="switchModalTab('preset')">📋 Select From Scope Library</button>
-        <button class="tab-btn" id="tab-custom-btn" onclick="switchModalTab('custom')">✏️ Create Custom Item</button>
+      <div class="modal-body">
+        <p style="margin-bottom:10px; color:var(--text-secondary);">Select items to import into this section:</p>
+        <div style="margin-bottom:10px;">
+          <input type="checkbox" id="chk-select-all" onclick="toggleSelectAllModal(this)">
+          <label for="chk-select-all" style="font-weight:bold; cursor:pointer;"> Select All Items</label>
+        </div>
+        <div id="modal-items-list"></div>
       </div>
 
-      <!-- Tab 1: Select from Scope Library (Pre-filled with Structure Excel Scopes) -->
-      <div class="tab-content" id="tab-preset">
-        <p style="margin-bottom:10px; color:var(--text-secondary);">Select one or multiple scopes from the Structure schedule to add directly into the section:</p>
-        <div id="scope-preset-container">
-          <!-- Populated dynamically based on section -->
-        </div>
-      </div>
-
-      <!-- Tab 2: Custom Item Manual Input -->
-      <div class="tab-content" id="tab-custom" style="display:none;">
-        <div class="form-group">
-          <label>Item Code (WBS)</label>
-          <input type="text" id="modal-code" placeholder="e.g. 1.01">
-        </div>
-        <div class="form-group">
-          <label>Item Description & Technical Spec</label>
-          <input type="text" id="modal-desc" placeholder="e.g. Concrete of 40MPa cylinder for beam">
-        </div>
-        <div class="form-group">
-          <label>Unit of Measurement</label>
-          <select id="modal-unit">
-            <option value="m³">m³ (Cubic Meter)</option>
-            <option value="m²">m² (Square Meter)</option>
-            <option value="kg">kg (Kilogram)</option>
-            <option value="nos">nos (Numbers)</option>
-            <option value="Pcs">Pcs</option>
-            <option value="Set">Set</option>
-            <option value="Lot">Lot</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Estimated Quantity</label>
-          <input type="number" id="modal-qty" value="0" step="any">
-        </div>
-        <div class="form-group">
-          <label>Unit Rate ($)</label>
-          <input type="number" id="modal-rate" value="0.00" step="any">
-        </div>
-      </div>
-
-      <div class="modal-actions">
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px; border-top:1px solid var(--border-color); padding-top:10px;">
         <button class="btn-hdr" style="background:#64748b; color:white;" onclick="closeModal()">Cancel</button>
-        <button class="btn-hdr" id="modal-add-btn" style="background:var(--accent-green); color:white;" onclick="confirmAddItems()">+ Import Selected Items</button>
+        <button class="btn-hdr" style="background:var(--accent-green); color:white;" onclick="confirmAddSelectedItems()">+ Add Selected Items</button>
       </div>
     </div>
   </div>
@@ -348,419 +194,345 @@
   <div id="toast-banner">Notification</div>
 
   <script>
-    // Initial Blank BOQ Data Structure
-    let wbsData = [
-      { section: "1.0 Structure Works", expanded: true, items: [] },
-      { section: "2.0 Architectural Works", expanded: true, items: [] },
-      { section: "3.0 MEP Works", expanded: true, items: [] }
-    ];
-
-    // Structural Scopes Extracted directly from Structure Scope Testing.xlsx
-    const structuralScopeLibrary = [
-      {
-        subSection: "SUB-STRUCTURAL WORK — Piling Work",
-        items: [
-          { desc: "Bore Pile Dia 1.2m, L=39m", unit: "nos" },
-          { desc: "Bore Pile Dia 1.5m, L=39m", unit: "nos" },
-          { desc: "Pile Head cutting Dia 1.2m", unit: "nos" },
-          { desc: "Pile Head cutting Dia 1.5m", unit: "nos" },
-          { desc: "Sonic Test for Bore Pile Dia 1.2m, grouting into sonic tube Dia 49mm", unit: "nos" },
-          { desc: "Sonic Test for Bore Pile Dia 1.5m, grouting into sonic tube Dia 49mm", unit: "nos" }
-        ]
+    // Exact Scope Master extracted from Structure Scope Testing.xlsx
+    const excelScopeLibrary = {
+      "I": {
+        mainTitle: "SUB-STRUCTURAL WORK",
+        subSections: {
+          "A": {
+            title: "PILING WORK",
+            items: [
+              { desc: "Bore Pile Dia 1.2m, L=39m", unit: "nos" },
+              { desc: "Bore Pile Dia 1.5m, L=39m", unit: "nos" },
+              { desc: "Pile Head cutting Dia 1.2m", unit: "nos" },
+              { desc: "Pile Head cutting Dia 1.5m", unit: "nos" },
+              { desc: "Sonic Test for Bore Pile Dia 1.2m, grouting into sonic tube Dia 49mm (1.8mm)", unit: "nos" },
+              { desc: "Sonic Test for Bore Pile Dia 1.5m, grouting into sonic tube Dia 49mm (1.8mm)", unit: "nos" }
+            ]
+          },
+          "B": {
+            title: "EARTH WORK",
+            items: [
+              { desc: "Excavation for pile cap", unit: "m³" },
+              { desc: "Existing soil backfill", unit: "m³" },
+              { desc: "Disposal surplus soil", unit: "m³" }
+            ]
+          },
+          "C": {
+            title: "BASE WORKS",
+            items: [
+              { desc: "Well compacted soil to Ground floor, pile cap", unit: "m²" },
+              { desc: "Well compacted crushed stone to pile cap, ground beam", unit: "m³" },
+              { desc: "Lean concrete for pile cap and ground slab", unit: "m³" },
+              { desc: "Anti termite spray for ground slab", unit: "m²" }
+            ]
+          },
+          "D": {
+            title: "FOUNDATION WORKS",
+            items: [
+              { desc: "Concrete of 40MPa cylinder for pile caps", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for column stumps", unit: "m³" },
+              { desc: "Formwork for pile caps", unit: "m²" },
+              { desc: "Formwork for column stumps", unit: "m²" },
+              { desc: "Reinforcement for pile caps (SD265 & SD390)", unit: "kg" },
+              { desc: "Reinforcement for column stumps (SD265 & SD390)", unit: "kg" },
+              { desc: "Rebar Coupler", unit: "nos" }
+            ]
+          }
+        }
       },
-      {
-        subSection: "SUB-STRUCTURAL WORK — Earth Work",
-        items: [
-          { desc: "Excavation for pile cap", unit: "m³" },
-          { desc: "Existing soil backfill", unit: "m³" },
-          { desc: "Disposal surplus soil", unit: "m³" }
-        ]
-      },
-      {
-        subSection: "SUB-STRUCTURAL WORK — Base Works",
-        items: [
-          { desc: "Well compacted soil to Ground floor, pile cap", unit: "m²" },
-          { desc: "Well compacted crushed stone to pile cap, ground beam", unit: "m³" },
-          { desc: "Lean concrete for pile cap and ground slab", unit: "m³" },
-          { desc: "Anti termite spray for ground slab", unit: "m²" }
-        ]
-      },
-      {
-        subSection: "SUB-STRUCTURAL WORK — Foundation Works",
-        items: [
-          { desc: "Concrete of 40MPa cylinder for pile caps", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for column stumps", unit: "m³" },
-          { desc: "Formwork for pile caps", unit: "m²" },
-          { desc: "Formwork for column stumps", unit: "m²" },
-          { desc: "Reinforcement for pile caps (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for column stumps (SD265 & SD390)", unit: "kg" },
-          { desc: "Rebar Coupler", unit: "nos" }
-        ]
-      },
-      {
-        subSection: "SUPER STRUCTURAL WORK — Ground Floor",
-        items: [
-          { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for column", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for staircase", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for lift", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for fire fighting tank", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for storage water tank", unit: "m³" },
-          { desc: "Formwork for beam", unit: "m²" },
-          { desc: "Formwork for slab", unit: "m²" },
-          { desc: "Formwork for column", unit: "m²" },
-          { desc: "Formwork for staircase", unit: "m²" },
-          { desc: "Formwork for lift", unit: "m²" },
-          { desc: "Formwork for fire fighting tank", unit: "m²" },
-          { desc: "Formwork for storage water tank", unit: "m²" },
-          { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for slab (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for column (SD265 & SD390)", unit: "kg" },
-          { desc: "Rebar Coupler", unit: "nos" },
-          { desc: "Reinforcement for staircase (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for lift (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for fire fighting tank (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for storage water tank (SD265 & SD390)", unit: "kg" }
-        ]
-      },
-      {
-        subSection: "SUPER STRUCTURAL WORK — Upper Floors (1st, Mezzanine, 2nd, Terrace)",
-        items: [
-          { desc: "Concrete of 40MPa cylinder for upper floor beam", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for upper floor slab", unit: "m³" },
-          { desc: "Concrete of 40MPa cylinder for upper floor column", unit: "m³" },
-          { desc: "Formwork for upper floor beam", unit: "m²" },
-          { desc: "Formwork for upper floor slab", unit: "m²" },
-          { desc: "Formwork for upper floor column", unit: "m²" },
-          { desc: "Reinforcement for upper floor beam (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for upper floor slab (SD265 & SD390)", unit: "kg" },
-          { desc: "Reinforcement for upper floor column (SD265 & SD390)", unit: "kg" },
-          { desc: "Post-Tension floor slab with bond system complete", unit: "m²" }
-        ]
+      "II": {
+        mainTitle: "SUPER STRUCTURAL WORK",
+        subSections: {
+          "A": {
+            title: "GROUND FLOOR",
+            items: [
+              { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for column", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for staircase", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for lift", unit: "m³" },
+              { desc: "Formwork for beam", unit: "m²" },
+              { desc: "Formwork for slab", unit: "m²" },
+              { desc: "Formwork for column", unit: "m²" },
+              { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" },
+              { desc: "Reinforcement for slab (SD265 & SD390)", unit: "kg" },
+              { desc: "Reinforcement for column (SD265 & SD390)", unit: "kg" }
+            ]
+          },
+          "B": {
+            title: "FIRST FLOOR",
+            items: [
+              { desc: "Concrete of 40MPa cylinder for beam", unit: "m³" },
+              { desc: "Concrete of 40MPa cylinder for slab", unit: "m³" },
+              { desc: "Formwork for beam", unit: "m²" },
+              { desc: "Formwork for slab", unit: "m²" },
+              { desc: "Reinforcement for beam (SD265 & SD390)", unit: "kg" },
+              { desc: "Reinforcement for slab (SD265 & SD390)", unit: "kg" },
+              { desc: "Post-Tension floor slab with the bond system", unit: "m²" }
+            ]
+          }
+        }
       }
-    ];
+    };
 
-    const generalScopeLibrary = [
-      {
-        subSection: "ARCHITECTURAL WORKS",
-        items: [
-          { desc: "Floor Tiles (60x60 Porcelain Tiles)", unit: "m²" },
-          { desc: "Wall Plastering (15mm Cement Mortar)", unit: "m²" },
-          { desc: "Aluminum Framed Fixed Glazing Window", unit: "m²" },
-          { desc: "Suspended Gypsum Ceiling Board System", unit: "m²" }
-        ]
+    // Blank State Initial Data Skeleton
+    let boqData = {
+      "I": {
+        num: "I",
+        title: "SUB-STRUCTURAL WORK",
+        expanded: true,
+        subSections: {
+          "A": { num: "A", title: "PILING WORK", expanded: true, items: [] },
+          "B": { num: "B", title: "EARTH WORK", expanded: true, items: [] },
+          "C": { num: "C", title: "BASE WORKS", expanded: true, items: [] },
+          "D": { num: "D", title: "FOUNDATION WORKS", expanded: true, items: [] }
+        }
       },
-      {
-        subSection: "MEP WORKS",
-        items: [
-          { desc: "Electrical Wiring & Concealed Conduits", unit: "Lot" },
-          { desc: "LED Downlight Architectural Fixtures", unit: "nos" },
-          { desc: "PPR Water Supply & PVC Drainage Pipework", unit: "Lot" }
-        ]
+      "II": {
+        num: "II",
+        title: "SUPER STRUCTURAL WORK",
+        expanded: true,
+        subSections: {
+          "A": { num: "A", title: "GROUND FLOOR", expanded: true, items: [] },
+          "B": { num: "B", title: "FIRST FLOOR", expanded: true, items: [] }
+        }
       }
-    ];
+    };
 
-    let activeSectionIndex = 0;
-    let activeModalTab = 'preset';
-    let chart1Instance = null;
-    let chart2Instance = null;
+    let activeTarget = { mainKey: null, subKey: null };
+    let pieChartInstance = null;
 
-    function calculateGrandTotal() {
-      let grandTotal = 0;
-      wbsData.forEach(sec => {
-        sec.items.forEach(item => {
-          grandTotal += (item.qty * item.rate);
-        });
-      });
-      return grandTotal;
-    }
-
-    function renderTable() {
+    function renderBOQTable() {
       const tbody = document.getElementById('boq-table-body');
       tbody.innerHTML = '';
 
-      const unitFilter = document.getElementById('unit-filter').value;
-      const grandTotal = calculateGrandTotal();
-      let sectionTotals = {};
+      let grandTotal = 0;
+      let subStructTotal = 0;
+      let superStructTotal = 0;
 
-      let hasAnyItems = false;
+      Object.keys(boqData).forEach(mKey => {
+        const mainSec = boqData[mKey];
+        let mainTotal = 0;
 
-      wbsData.forEach((sec, sIdx) => {
-        let secSubtotal = 0;
-
-        let filteredItems = sec.items.filter(item => {
-          return (unitFilter === 'ALL' || item.unit === unitFilter);
+        // Calculate Main Section Total first
+        Object.keys(mainSec.subSections).forEach(sKey => {
+          const subSec = mainSec.subSections[sKey];
+          subSec.items.forEach(item => {
+            mainTotal += (item.qty * item.rate);
+          });
         });
 
-        filteredItems.forEach(item => {
-          secSubtotal += (item.qty * item.rate);
-          hasAnyItems = true;
-        });
+        if (mKey === "I") subStructTotal = mainTotal;
+        if (mKey === "II") superStructTotal = mainTotal;
+        grandTotal += mainTotal;
 
-        sectionTotals[sec.section] = secSubtotal;
-
-        // Section WBS Header Row with EASY ADD ITEM BUTTON
-        const headerTr = document.createElement('tr');
-        headerTr.className = 'row-wbs-header';
-        headerTr.innerHTML = `
-          <td colspan="5">
-            <span class="toggle-icon" onclick="toggleSection(${sIdx})">${sec.expanded ? '▼' : '►'}</span>
-            <strong>${sec.section}</strong>
-            <button class="btn-add-section" onclick="openAddItemModal(${sIdx})">+ Add Item / Select Scope</button>
+        // Render Level 1: Main Section Header
+        const mainTr = document.createElement('tr');
+        mainTr.className = 'row-main-section';
+        mainTr.innerHTML = `
+          <td>${mainSec.num}</td>
+          <td colspan="4">
+            <span class="toggle-icon" onclick="toggleMain('${mKey}')">${mainSec.expanded ? '▼' : '►'}</span>
+            ${mainSec.title}
           </td>
-          <td style="text-align:right;">${formatCurr(secSubtotal)}</td>
-          <td style="text-align:right;">${grandTotal > 0 ? (secSubtotal / grandTotal * 100).toFixed(2) : '0.00'}%</td>
+          <td style="text-align:right;">${formatCurr(mainTotal)}</td>
           <td></td>
         `;
-        tbody.appendChild(headerTr);
+        tbody.appendChild(mainTr);
 
-        // Render Item Rows
-        if (sec.expanded) {
-          if (filteredItems.length === 0) {
-            const emptyTr = document.createElement('tr');
-            emptyTr.innerHTML = `<td colspan="8" style="text-align:center; color:#94a3b8; font-style:italic; padding:8px;">No items added to this section yet. Click "+ Add Item / Select Scope" above to add items.</td>`;
-            tbody.appendChild(emptyTr);
-          } else {
-            filteredItems.forEach((item, iIdx) => {
-              const itemTotal = item.qty * item.rate;
-              const weightage = grandTotal > 0 ? (itemTotal / grandTotal * 100).toFixed(2) : "0.00";
+        // Render Level 2: Sub-Sections & Items
+        if (mainSec.expanded) {
+          Object.keys(mainSec.subSections).forEach(sKey => {
+            const subSec = mainSec.subSections[sKey];
+            let subTotal = 0;
+            subSec.items.forEach(i => subTotal += (i.qty * i.rate));
 
-              const tr = document.createElement('tr');
-              tr.className = 'row-item';
-              tr.innerHTML = `
-                <td style="font-weight:bold; color:var(--primary-green);">${item.code}</td>
-                <td class="editable-cell" style="text-align:left;" onclick="makeEditableText(this, ${sIdx}, ${iIdx}, 'desc')">${item.desc}</td>
-                <td align="center">${item.unit}</td>
-                <td class="editable-cell" onclick="makeEditableNumber(this, ${sIdx}, ${iIdx}, 'qty')">${item.qty.toLocaleString()}</td>
-                <td class="editable-cell" onclick="makeEditableNumber(this, ${sIdx}, ${iIdx}, 'rate')">${formatCurr(item.rate)}</td>
-                <td style="text-align:right; font-weight:bold; color:var(--primary-green);">${formatCurr(itemTotal)}</td>
-                <td style="text-align:right; color:var(--text-secondary);">${weightage}%</td>
-                <td class="btn-del" onclick="deleteItem(${sIdx}, ${iIdx})" title="Delete Item">✕</td>
-              `;
-              tbody.appendChild(tr);
-            });
-          }
+            const subTr = document.createElement('tr');
+            subTr.className = 'row-sub-section';
+            subTr.innerHTML = `
+              <td style="padding-left:15px;">${subSec.num}</td>
+              <td colspan="4">
+                <span class="toggle-icon" onclick="toggleSub('${mKey}', '${sKey}')">${subSec.expanded ? '▼' : '►'}</span>
+                <strong>${subSec.title}</strong>
+                <button class="btn-add-sub" onclick="openAddItemsModal('${mKey}', '${sKey}')">+ Add Items</button>
+              </td>
+              <td style="text-align:right;">${formatCurr(subTotal)}</td>
+              <td></td>
+            `;
+            tbody.appendChild(subTr);
+
+            // Render Level 3: Line Items
+            if (subSec.expanded) {
+              if (subSec.items.length === 0) {
+                const emptyTr = document.createElement('tr');
+                emptyTr.innerHTML = `<td colspan="7" style="text-align:center; color:#94a3b8; font-style:italic; padding:6px;">No items in ${subSec.title}. Click "+ Add Items" above to add scope.</td>`;
+                tbody.appendChild(emptyTr);
+              } else {
+                subSec.items.forEach((item, iIdx) => {
+                  const itemTotal = item.qty * item.rate;
+                  const itemTr = document.createElement('tr');
+                  itemTr.className = 'row-item';
+                  itemTr.innerHTML = `
+                    <td style="text-align:center; color:var(--text-secondary);">${iIdx + 1}</td>
+                    <td class="editable-cell" style="text-align:left;" onclick="makeEditableText(this, '${mKey}', '${sKey}', ${iIdx}, 'desc')">${item.desc}</td>
+                    <td align="center">${item.unit}</td>
+                    <td class="editable-cell" onclick="makeEditableNumber(this, '${mKey}', '${sKey}', ${iIdx}, 'qty')">${item.qty.toLocaleString()}</td>
+                    <td class="editable-cell" onclick="makeEditableNumber(this, '${mKey}', '${sKey}', ${iIdx}, 'rate')">${formatCurr(item.rate)}</td>
+                    <td style="text-align:right; font-weight:bold; color:#1e3a8a;">${formatCurr(itemTotal)}</td>
+                    <td class="btn-del" onclick="deleteItem('${mKey}', '${sKey}', ${iIdx})" title="Delete Item">✕</td>
+                  `;
+                  tbody.appendChild(itemTr);
+                });
+              }
+            }
+          });
         }
       });
 
-      // Update Header Cards & Metrics
-      document.getElementById('grand-total-display').innerText = `Total Estimate: ${formatCurr(grandTotal)}`;
-      document.getElementById('card-struct-sub').innerText = formatCurr(sectionTotals["1.0 Structure Works"] || 0);
-      document.getElementById('card-arch-sub').innerText = formatCurr(sectionTotals["2.0 Architectural Works"] || 0);
-      document.getElementById('card-mep-sub').innerText = formatCurr(sectionTotals["3.0 MEP Works"] || 0);
-      document.getElementById('card-grand-total').innerText = formatCurr(grandTotal);
+      // Update Dashboard Totals
+      document.getElementById('sum-sub-struct').innerText = formatCurr(subStructTotal);
+      document.getElementById('sum-super-struct').innerText = formatCurr(superStructTotal);
+      document.getElementById('grand-total-val').innerText = formatCurr(grandTotal);
 
-      // Cost Weightages
-      document.getElementById('weight-struct').innerText = grandTotal > 0 ? `${((sectionTotals["1.0 Structure Works"] || 0) / grandTotal * 100).toFixed(2)}%` : '0.00%';
-      document.getElementById('weight-arch').innerText = grandTotal > 0 ? `${((sectionTotals["2.0 Architectural Works"] || 0) / grandTotal * 100).toFixed(2)}%` : '0.00%';
-      document.getElementById('weight-mep').innerText = grandTotal > 0 ? `${((sectionTotals["3.0 MEP Works"] || 0) / grandTotal * 100).toFixed(2)}%` : '0.00%';
-
-      updateCharts(sectionTotals);
+      updateChart(subStructTotal, superStructTotal);
     }
 
-    function toggleSection(idx) {
-      wbsData[idx].expanded = !wbsData[idx].expanded;
-      renderTable();
+    function toggleMain(mKey) {
+      boqData[mKey].expanded = !boqData[mKey].expanded;
+      renderBOQTable();
     }
 
-    /* Open Modal and Build Scope Checkbox List */
-    function openAddItemModal(sectionIndex) {
-      activeSectionIndex = sectionIndex;
-      const secName = wbsData[sectionIndex].section;
-      document.getElementById('modal-target-section').innerText = `Add Items to: ${secName}`;
+    function toggleSub(mKey, sKey) {
+      boqData[mKey].subSections[sKey].expanded = !boqData[mKey].subSections[sKey].expanded;
+      renderBOQTable();
+    }
 
-      // Populate Scope Library based on Section
-      const scopeContainer = document.getElementById('scope-preset-container');
-      scopeContainer.innerHTML = '';
+    /* Add Items Modal */
+    function openAddItemsModal(mKey, sKey) {
+      activeTarget = { mainKey: mKey, subKey: sKey };
+      const subSec = boqData[mKey].subSections[sKey];
+      document.getElementById('modal-title').innerText = `Add Scope Items to: ${mainKeyName(mKey)} → ${subSec.title}`;
 
-      let library = (sectionIndex === 0) ? structuralScopeLibrary : generalScopeLibrary;
+      const listContainer = document.getElementById('modal-items-list');
+      listContainer.innerHTML = '';
 
-      library.forEach((group, gIdx) => {
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'scope-group';
-        
-        let itemsHtml = '';
-        group.items.forEach((item, iIdx) => {
-          itemsHtml += `
-            <div class="scope-item-row">
-              <label>
-                <input type="checkbox" class="scope-chk" data-desc="${item.desc}" data-unit="${item.unit}">
-                <span>${item.desc}</span>
-              </label>
-              <span style="color:var(--text-secondary); font-weight:bold;">[${item.unit}]</span>
-            </div>
+      // Check if presets exist in library
+      const libraryPreset = excelScopeLibrary[mKey]?.subSections[sKey]?.items || [];
+
+      if (libraryPreset.length > 0) {
+        libraryPreset.forEach((item, idx) => {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'scope-item-row';
+          rowDiv.innerHTML = `
+            <label>
+              <input type="checkbox" class="chk-modal-item" data-desc="${item.desc}" data-unit="${item.unit}">
+              <span>${item.desc}</span>
+            </label>
+            <span style="font-weight:bold; color:var(--text-secondary);">[${item.unit}]</span>
           `;
+          listContainer.appendChild(rowDiv);
         });
+      } else {
+        listContainer.innerHTML = `<p style="color:#94a3b8;">No presets found for this subsection.</p>`;
+      }
 
-        groupDiv.innerHTML = `
-          <div class="scope-group-title">
-            <input type="checkbox" onclick="toggleSelectAllGroup(this)">
-            <span>${group.subSection}</span>
-          </div>
-          <div>${itemsHtml}</div>
-        `;
-        scopeContainer.appendChild(groupDiv);
+      document.getElementById('chk-select-all').checked = false;
+      document.getElementById('add-scope-modal').style.display = 'flex';
+    }
+
+    function toggleSelectAllModal(masterChk) {
+      document.querySelectorAll('.chk-modal-item').forEach(chk => chk.checked = masterChk.checked);
+    }
+
+    function confirmAddSelectedItems() {
+      const checked = document.querySelectorAll('.chk-modal-item:checked');
+      if (checked.length === 0) {
+        alert("Please select at least one item.");
+        return;
+      }
+
+      let count = 0;
+      checked.forEach(chk => {
+        const desc = chk.getAttribute('data-desc');
+        const unit = chk.getAttribute('data-unit');
+
+        boqData[activeTarget.mainKey].subSections[activeTarget.subKey].items.push({
+          desc: desc,
+          unit: unit,
+          qty: 0,
+          rate: 0
+        });
+        count++;
       });
 
-      // Default auto-code calculation
-      const currentItemsCount = wbsData[sectionIndex].items.length + 1;
-      const prefix = (sectionIndex + 1);
-      document.getElementById('modal-code').value = `${prefix}.${currentItemsCount < 10 ? '0' + currentItemsCount : currentItemsCount}`;
-      document.getElementById('modal-desc').value = '';
-
-      switchModalTab('preset');
-      document.getElementById('add-item-modal').style.display = 'flex';
-    }
-
-    function toggleSelectAllGroup(masterChk) {
-      const group = masterChk.closest('.scope-group');
-      group.querySelectorAll('.scope-chk').forEach(chk => chk.checked = masterChk.checked);
-    }
-
-    function switchModalTab(tab) {
-      activeModalTab = tab;
-      if (tab === 'preset') {
-        document.getElementById('tab-preset').style.display = 'block';
-        document.getElementById('tab-custom').style.display = 'none';
-        document.getElementById('tab-preset-btn').classList.add('active');
-        document.getElementById('tab-custom-btn').classList.remove('active');
-        document.getElementById('modal-add-btn').innerText = "+ Import Selected Scope Items";
-      } else {
-        document.getElementById('tab-preset').style.display = 'none';
-        document.getElementById('tab-custom').style.display = 'block';
-        document.getElementById('tab-custom-btn').classList.add('active');
-        document.getElementById('tab-preset-btn').classList.remove('active');
-        document.getElementById('modal-add-btn').innerText = "+ Add Custom Item";
-      }
+      closeModal();
+      renderBOQTable();
+      showToast(`Added ${count} items successfully!`);
     }
 
     function closeModal() {
-      document.getElementById('add-item-modal').style.display = 'none';
+      document.getElementById('add-scope-modal').style.display = 'none';
     }
 
-    function confirmAddItems() {
-      if (activeModalTab === 'preset') {
-        const checkedBoxes = document.querySelectorAll('.scope-chk:checked');
-        if (checkedBoxes.length === 0) {
-          alert("Please select at least one item from the scope list.");
-          return;
-        }
-
-        let countAdded = 0;
-        checkedBoxes.forEach(chk => {
-          const desc = chk.getAttribute('data-desc');
-          const unit = chk.getAttribute('data-unit');
-          const currentCount = wbsData[activeSectionIndex].items.length + 1;
-          const code = `${activeSectionIndex + 1}.${currentCount < 10 ? '0' + currentCount : currentCount}`;
-
-          wbsData[activeSectionIndex].items.push({
-            code: code,
-            desc: desc,
-            unit: unit,
-            qty: 0,
-            rate: 0
-          });
-          countAdded++;
-        });
-
-        closeModal();
-        renderTable();
-        showToast(`Successfully added ${countAdded} scope items!`);
-
-      } else {
-        // Custom Single Item
-        const code = document.getElementById('modal-code').value || "1.01";
-        const desc = document.getElementById('modal-desc').value;
-        const unit = document.getElementById('modal-unit').value;
-        const qty = parseFloat(document.getElementById('modal-qty').value) || 0;
-        const rate = parseFloat(document.getElementById('modal-rate').value) || 0;
-
-        if (!desc) {
-          alert("Please enter item description!");
-          return;
-        }
-
-        wbsData[activeSectionIndex].items.push({
-          code: code, desc: desc, unit: unit, qty: qty, rate: rate
-        });
-
-        closeModal();
-        renderTable();
-        showToast(`Added custom item: "${desc}"`);
-      }
-    }
-
-    function deleteItem(sIdx, iIdx) {
-      if (confirm("Are you sure you want to delete this BOQ item?")) {
-        wbsData[sIdx].items.splice(iIdx, 1);
-        renderTable();
-        showToast("Item removed.");
+    function deleteItem(mKey, sKey, iIdx) {
+      if (confirm("Remove this item?")) {
+        boqData[mKey].subSections[sKey].items.splice(iIdx, 1);
+        renderBOQTable();
       }
     }
 
     function clearBOQ() {
-      if (confirm("Are you sure you want to reset and clear all items to make the BOQ blank?")) {
-        wbsData.forEach(sec => sec.items = []);
-        localStorage.removeItem('boq_master_data');
-        renderTable();
-        showToast("BOQ schedule cleared to blank.");
+      if (confirm("Clear all items and make BOQ blank?")) {
+        Object.keys(boqData).forEach(mKey => {
+          Object.keys(boqData[mKey].subSections).forEach(sKey => {
+            boqData[mKey].subSections[sKey].items = [];
+          });
+        });
+        localStorage.removeItem('boq_structure_hierarchical');
+        renderBOQTable();
+        showToast("BOQ cleared to blank state.");
       }
     }
 
-    /* Formatting & Inline Cell Editing */
+    /* Editable Cells & Helpers */
     function formatCurr(val) {
       return '$' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function makeEditableNumber(cell, sIdx, iIdx, field) {
+    function mainKeyName(mKey) {
+      return mKey === 'I' ? 'SUB-STRUCTURAL WORK' : 'SUPER STRUCTURAL WORK';
+    }
+
+    function makeEditableNumber(cell, mKey, sKey, iIdx, field) {
       if (cell.querySelector('input')) return;
-      const val = wbsData[sIdx].items[iIdx][field];
-      cell.innerHTML = `<input type="number" value="${val}" step="any" onblur="saveCell(this, ${sIdx}, ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      const val = boqData[mKey].subSections[sKey].items[iIdx][field];
+      cell.innerHTML = `<input type="number" value="${val}" step="any" onblur="saveCell(this, '${mKey}', '${sKey}', ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
       cell.querySelector('input').focus();
     }
 
-    function makeEditableText(cell, sIdx, iIdx, field) {
+    function makeEditableText(cell, mKey, sKey, iIdx, field) {
       if (cell.querySelector('input')) return;
-      const val = wbsData[sIdx].items[iIdx][field];
-      cell.innerHTML = `<input type="text" value="${val}" style="width:100%; text-align:left;" onblur="saveCell(this, ${sIdx}, ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      const val = boqData[mKey].subSections[sKey].items[iIdx][field];
+      cell.innerHTML = `<input type="text" value="${val}" style="width:100%; text-align:left;" onblur="saveCell(this, '${mKey}', '${sKey}', ${iIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
       cell.querySelector('input').focus();
     }
 
-    function saveCell(input, sIdx, iIdx, field) {
-      const newVal = field === 'desc' ? input.value : (parseFloat(input.value) || 0);
-      wbsData[sIdx].items[iIdx][field] = newVal;
-      renderTable();
+    function saveCell(input, mKey, sKey, iIdx, field) {
+      const val = field === 'desc' ? input.value : (parseFloat(input.value) || 0);
+      boqData[mKey].subSections[sKey].items[iIdx][field] = val;
+      renderBOQTable();
     }
 
-    /* Search & Filters */
-    function filterTable() {
-      const term = document.getElementById('global-search').value.toLowerCase();
-      document.querySelectorAll('#boq-table-body tr.row-item').forEach(row => {
-        const codeText = row.cells[0].innerText.toLowerCase();
-        const descText = row.cells[1].innerText.toLowerCase();
-        row.style.display = (codeText.includes(term) || descText.includes(term)) ? '' : 'none';
-      });
-    }
-
-    function filterWBS() {
-      const val = document.getElementById('wbs-filter').value;
-      wbsData.forEach(sec => {
-        sec.expanded = (val === 'ALL' || sec.section === val);
-      });
-      renderTable();
-    }
-
-    /* Local Storage & Excel Export */
     function saveToLocalStorage() {
-      localStorage.setItem('boq_master_data', JSON.stringify(wbsData));
-      showToast("✅ BOQ Schedule Saved locally!");
+      localStorage.setItem('boq_structure_hierarchical', JSON.stringify(boqData));
+      showToast("✅ BOQ Saved!");
     }
 
     function loadLocalStorage() {
-      const saved = localStorage.getItem('boq_master_data');
+      const saved = localStorage.getItem('boq_structure_hierarchical');
       if (saved) {
-        try { wbsData = JSON.parse(saved); } catch(e) {}
+        try { boqData = JSON.parse(saved); } catch(e) {}
       }
     }
 
@@ -770,70 +542,52 @@
       setTimeout(() => { t.style.display = 'none'; }, 3000);
     }
 
-    /* Analytics Chart Renderers */
-    function initCharts() {
-      const ctx1 = document.getElementById('divisionSubtotalChart').getContext('2d');
-      chart1Instance = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels: ['Structure', 'Architectural', 'MEP'],
-          datasets: [{ label: 'Subtotal ($)', data: [0, 0, 0], backgroundColor: '#059669' }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { display: false } }
-        }
-      });
-
-      const ctx2 = document.getElementById('divisionPieChart').getContext('2d');
-      chart2Instance = new Chart(ctx2, {
+    function initChart() {
+      const ctx = document.getElementById('structurePieChart').getContext('2d');
+      pieChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Structure', 'Architectural', 'MEP'],
-          datasets: [{ data: [0, 0, 0], backgroundColor: ['#064e3b', '#059669', '#0284c7'] }]
+          labels: ['Sub-Structural Work', 'Super Structural Work'],
+          datasets: [{ data: [0, 0], backgroundColor: ['#1e3a8a', '#059669'] }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+          plugins: { legend: { position: 'bottom' } }
         }
       });
     }
 
-    function updateCharts(totals) {
-      if (!chart1Instance || !chart2Instance) return;
-
-      const structVal = totals["1.0 Structure Works"] || 0;
-      const archVal = totals["2.0 Architectural Works"] || 0;
-      const mepVal = totals["3.0 MEP Works"] || 0;
-
-      chart1Instance.data.datasets[0].data = [structVal, archVal, mepVal];
-      chart1Instance.update();
-
-      chart2Instance.data.datasets[0].data = [structVal, archVal, mepVal];
-      chart2Instance.update();
+    function updateChart(subTotal, superTotal) {
+      if (!pieChartInstance) return;
+      pieChartInstance.data.datasets[0].data = [subTotal, superTotal];
+      pieChartInstance.update();
     }
 
     function exportToExcel() {
-      const data = [["WBS Code", "Item Description & Specification", "Unit", "Quantity", "Unit Rate ($)", "Total Amount ($)"]];
+      const data = [["Nº", "DESCRIPTION & SPECIFICATION", "UNIT", "QUANTITY", "UNIT RATE ($)", "AMOUNT ($)"]];
       
-      wbsData.forEach(sec => {
-        data.push([sec.section, "", "", "", "", ""]);
-        sec.items.forEach(i => {
-          data.push([i.code, i.desc, i.unit, i.qty, i.rate, i.qty * i.rate]);
+      Object.keys(boqData).forEach(mKey => {
+        const m = boqData[mKey];
+        data.push([m.num, m.title, "", "", "", ""]);
+        Object.keys(m.subSections).forEach(sKey => {
+          const s = m.subSections[sKey];
+          data.push([s.num, s.title, "", "", "", ""]);
+          s.items.forEach((i, idx) => {
+            data.push([idx + 1, i.desc, i.unit, i.qty, i.rate, i.qty * i.rate]);
+          });
         });
       });
 
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "BOQ_Estimate");
-      XLSX.writeFile(wb, "Bill_of_Quantities_Estimate.xlsx");
+      XLSX.utils.book_append_sheet(wb, ws, "Structure_BOQ");
+      XLSX.writeFile(wb, "Structure_BOQ_Hierarchical.xlsx");
     }
 
     window.onload = () => {
       loadLocalStorage();
-      initCharts();
-      renderTable();
+      initChart();
+      renderBOQTable();
     };
   </script>
 </body>
