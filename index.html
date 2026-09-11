@@ -3,426 +3,415 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARCHITECHTURES — Cost Engine</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <title>Estimate Analysis — Construction Cost Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
-      --bg-app: #f4f5f7;
-      --bg-panel: #ffffff;
-      --border-color: #e2e8f0;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --primary: #0284c7;
-      --accent-green: #84cc16;
-      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --bg-app: #f4f5f8;
+      --bg-card: #ffffff;
+      --border-color: #e5e7eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --accent-yellow: #facc15;
+      --highlight-yellow: #fef08a;
+      --accent-blue: #3b82f6;
+      --accent-green: #22c55e;
+      --radius-sm: 6px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
-    body { background-color: var(--bg-app); color: var(--text-main); font-size: 13px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    body { background-color: var(--bg-app); color: var(--text-primary); font-size: 12px; padding: 16px; min-height: 100vh; }
 
-    /* Top Navigation Header */
-    header.nav-header {
-      background: #ffffff; border-bottom: 1px solid var(--border-color);
-      display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; height: 48px;
+    /* App Container Shell */
+    .app-container { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 20px; max-width: 1600px; margin: 0 auto; }
+
+    /* Header Bar */
+    header.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-title { font-size: 18px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+    
+    .search-bar-wrapper { position: relative; width: 320px; }
+    .search-bar-wrapper input {
+      width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border-color);
+      border-radius: 20px; background: #f9fafb; font-size: 12px; outline: none; transition: 0.2s;
     }
-    .brand-title { font-size: 16px; font-weight: 800; letter-spacing: 1px; color: #000; text-transform: uppercase; }
-    .nav-tabs { display: flex; gap: 4px; }
-    .nav-tab { padding: 6px 14px; border-radius: 4px; font-weight: 600; cursor: pointer; color: var(--text-muted); text-transform: uppercase; font-size: 11px; }
-    .nav-tab.active { background: #e0f2fe; color: #0369a1; }
+    .search-bar-wrapper input:focus { border-color: var(--accent-blue); background: #fff; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 12px; }
 
-    .header-center { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 12px; }
-    .header-center select { padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; }
+    .user-profile { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #475569; }
 
-    .header-right { display: flex; align-items: center; gap: 8px; }
-    .mode-toggle { display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; background: #f8fafc; }
-    .mode-btn { padding: 4px 10px; font-size: 10px; font-weight: bold; cursor: pointer; border: none; background: transparent; }
-    .mode-btn.active { background: #334155; color: white; }
+    /* Filter Toolbar Row */
+    .filter-toolbar {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-group label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+    .filter-group select, .filter-group input {
+      padding: 6px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm);
+      background: #fff; font-size: 12px; outline: none; color: var(--text-primary);
+    }
 
-    .export-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px; }
-    .btn-xls { background: #e0f2fe; color: #0369a1; }
-    .btn-cad { background: #fef3c7; color: #b45309; }
-    .btn-bim { background: #dcfce7; color: #15803d; }
+    /* Main Grid Split */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
 
-    /* Main Grid Layout (3 Columns) */
-    .app-workspace { display: grid; grid-template-columns: 280px 1fr 320px; height: calc(100vh - 48px); overflow: hidden; }
+    /* Left Table Area */
+    .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+    .section-title-bar { background: #fafafa; padding: 10px 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); color: #334155; }
 
-    /* Panel Base */
-    .panel { background: var(--bg-panel); border-right: 1px solid var(--border-color); overflow-y: auto; padding: 12px; }
-    .panel-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    table.estimate-table { width: 100%; border-collapse: collapse; text-align: left; }
+    table.estimate-table th {
+      background: #f8fafc; padding: 10px; font-size: 11px; font-weight: 700; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color); border-right: 1px solid #f1f5f9; text-transform: capitalize;
+    }
+    table.estimate-table td {
+      padding: 8px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f8fafc; font-size: 12px;
+    }
 
-    /* Left Sidebar Styling */
-    .sidebar-section { border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #fafafa; }
-    .control-group { margin-bottom: 8px; }
-    .control-label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-    .control-input, .control-select { width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; }
-
-    /* Middle Main Estimate Panel */
-    .main-estimate-panel { padding: 16px; overflow-y: auto; background: #ffffff; }
-    .estimate-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border-color); }
-    .estimate-title { font-weight: 800; font-size: 14px; text-transform: uppercase; }
-
-    /* Category Blocks & Table */
-    .category-block { margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
-    .category-header { background: #f8fafc; padding: 10px 14px; font-weight: 700; font-size: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+    /* Row Hierarchy Styles */
+    .row-parent { background: var(--highlight-yellow) !important; font-weight: 700; cursor: pointer; }
+    .row-child { background: #ffffff; }
+    .row-child:hover { background: #f8fafc; }
+    .toggle-btn { cursor: pointer; font-size: 12px; user-select: none; margin-right: 6px; display: inline-block; width: 14px; }
     
-    table.cost-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
-    table.cost-table th { background: #ffffff; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 10px; text-transform: uppercase; }
-    table.cost-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
-    table.cost-table tr:hover { background: #f8fafc; }
+    .editable-cell { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.15s; text-align: right; }
+    .editable-cell:hover { background: #e0f2fe; }
+    .editable-cell input { width: 90px; text-align: right; padding: 2px 4px; font-size: 11px; border: 1px solid var(--accent-blue); border-radius: 3px; }
 
-    .cell-input { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 4px; text-align: right; font-size: 12px; }
-    .cell-input:hover, .cell-input:focus { border-color: var(--primary); outline: none; background: #fff; }
-    .cell-text { text-align: left; }
+    .tooltip-icon { display: inline-block; width: 14px; height: 14px; background: #e2e8f0; border-radius: 50%; text-align: center; font-size: 10px; line-height: 14px; color: #475569; margin-left: 4px; cursor: help; }
 
-    /* Right Analytics Panel */
-    .analytics-panel { border-left: 1px solid var(--border-color); border-right: none; background: #ffffff; }
-    .summary-card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 16px; }
-    .summary-val-large { font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 4px; text-align: right; }
-    
-    /* Pie Chart Container */
-    .chart-container { display: flex; justify-content: center; align-items: center; margin: 16px 0; }
-    .pie-chart { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#84cc16 0% 35%, #0284c7 35% 80%, #f59e0b 80% 100%); }
+    /* Right Analytics Column */
+    .analytics-col { display: flex; flex-direction: column; gap: 16px; }
+    .analytics-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
+    .analytics-title { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* Breakdown List */
-    .breakdown-list { margin-top: 12px; }
-    .breakdown-item { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; }
-    .breakdown-item.bold { font-weight: bold; border-top: 1px solid var(--border-color); padding-top: 6px; margin-top: 4px; }
+    /* Committed Percentage List */
+    .percent-list { display: flex; flex-direction: column; gap: 6px; }
+    .percent-item { display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .percent-badge { padding: 3px 8px; border-radius: 12px; font-weight: 800; font-size: 10px; background: var(--highlight-yellow); color: #854d0e; }
 
-    /* Notifications Toast */
-    #toast-banner { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white; padding: 10px 16px; border-radius: 6px; font-size: 12px; display: none; z-index: 2000; }
+    /* Chart Containers */
+    .chart-box { height: 180px; position: relative; }
+
+    /* Tooltip Banner */
+    .info-banner { background: #1e293b; color: white; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation Header Bar -->
-  <header class="nav-header">
-    <div style="display: flex; align-items: center; gap: 20px;">
-      <span class="brand-title">ARCHITECHTURES</span>
-      <div class="nav-tabs">
-        <div class="nav-tab">Plans</div>
-        <div class="nav-tab">Model</div>
-        <div class="nav-tab active">Cost</div>
-      </div>
-    </div>
-
-    <div class="header-center">
-      <span>↑ DES BASTOGNES 84</span>
-      <span>|</span>
-      <select id="grade-view">
-        <option>Above Grade ∨</option>
-        <option>Below Grade ∨</option>
-        <option>Full View ∨</option>
-      </select>
-    </div>
-
-    <div class="header-right">
-      <div style="font-size: 11px; color: var(--text-muted); margin-right: 6px;">Edit Mode</div>
-      <div class="mode-toggle">
-        <button class="mode-btn active">AUTO</button>
-        <button class="mode-btn">MANUAL</button>
-        <button class="mode-btn">READONLY</button>
-      </div>
-      <button class="export-badge btn-xls" onclick="exportToExcel()">XLS ▷</button>
-      <button class="export-badge btn-cad">CADD ▷</button>
-      <button class="export-badge btn-bim">BIM ▷</button>
-    </div>
-  </header>
-
-  <!-- Workspace Shell (3 Panels) -->
-  <div class="app-workspace">
+  <div class="app-container">
     
-    <!-- LEFT CONTROL SIDEBAR -->
-    <div class="panel">
-      <div class="sidebar-section">
-        <div class="panel-title">▲ PRESETS</div>
-        <div class="control-group">
-          <label class="control-label">Preset panel</label>
-          <select class="control-select"><option>Select Preset ∨</option></select>
-        </div>
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-left">
+        <div class="header-title">📐 Estimate Analysis</div>
       </div>
-
-      <div class="sidebar-section">
-        <div class="panel-title">▲ CURRENCY</div>
-        <div class="control-group">
-          <label class="control-label">Currency</label>
-          <select class="control-select" id="currency-select" onchange="updateCurrency()">
-            <option value="EUR">Euro (EUR) - €</option>
-            <option value="USD">US Dollar (USD) - $</option>
-            <option value="GBP">Pound (GBP) - £</option>
-          </select>
-        </div>
+      <div class="search-bar-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="global-search" placeholder="Search item, division..." onkeyup="filterTable()">
       </div>
-
-      <div class="sidebar-section">
-        <div class="panel-title">▼ SITE WORKS</div>
+      <div class="user-profile">
+        <span style="font-weight: 600; font-size: 12px;">John Doe</span>
+        <div class="avatar">JD</div>
       </div>
+    </header>
 
-      <div class="sidebar-section">
-        <div class="panel-title">▲ FOUNDATIONS</div>
-        <div class="control-group">
-          <label class="control-label">Preset group</label>
-          <select class="control-select"><option>Select Preset ∨</option></select>
-        </div>
-        <div class="control-group">
-          <label class="control-label">Foundation excavation, fill & grading</label>
-          <input type="text" class="control-input" value="21.00 €/m³" disabled>
-        </div>
-        <div class="control-group">
-          <label class="control-label">Foundation construction (piling, caissons, etc.)</label>
-          <input type="text" class="control-input" value="95.00 €/m³" disabled>
-        </div>
+    <!-- Filter Toolbar -->
+    <div class="filter-toolbar">
+      <div class="filter-group">
+        <label>Projects</label>
+        <input type="text" value="137" readonly>
       </div>
-
-      <div class="sidebar-section">
-        <div class="panel-title">▲ STRUCTURES</div>
-        <div class="control-group">
-          <label class="control-label">Beams and trusses</label>
-          <input type="text" class="control-input" value="95.00 €/lm" disabled>
-        </div>
-        <div class="control-group">
-          <label class="control-label">Columns</label>
-          <input type="text" class="control-input" value="43.00 €/lm" disabled>
-        </div>
+      <div class="filter-group">
+        <label>Project</label>
+        <select id="project-filter" onchange="filterProject()">
+          <option value="ALL">All Projects</option>
+          <option value="Vortex Business Centre" selected>Vortex Business Centre</option>
+          <option value="Prime Contact 1">Prime Contact 1</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Division</label>
+        <select id="division-filter">
+          <option value="ALL">All Divisions</option>
+          <option>01 | General Requirements</option>
+          <option>02 | Site Construction</option>
+          <option>03 | Concrete</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Cost Code</label>
+        <select><option>All Cost Codes</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Is Bought Out?</label>
+        <select><option>All Statuses</option><option>Yes</option><option>No</option></select>
       </div>
     </div>
 
-    <!-- MIDDLE ESTIMATE GRID TABLE -->
-    <div class="main-estimate-panel">
-      <div class="estimate-top-bar">
-        <span class="estimate-title">ABOVE GRADE ESTIMATE</span>
-        <span class="estimate-title" id="above-grade-total">0.00 €</span>
-      </div>
-
-      <!-- 50 - SITE WORKS -->
-      <div class="category-block">
-        <div class="category-header">
-          <span>▲ 50 - SITE WORKS</span>
-          <span id="cat-50-total">0.00 €</span>
-        </div>
-        <table class="cost-table">
-          <thead>
-            <tr>
-              <th style="width: 60px;">CODE</th>
-              <th>DESCRIPTION</th>
-              <th style="width: 100px; text-align: right;">QUANTITY</th>
-              <th style="width: 100px; text-align: right;">COST</th>
-              <th style="width: 120px; text-align: right;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody id="sec-siteworks">
-            <!-- Dynamic rows -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 02 - FOUNDATIONS -->
-      <div class="category-block">
-        <div class="category-header">
-          <span>▲ 02 - FOUNDATIONS</span>
-          <span id="cat-02-total">0.00 €</span>
-        </div>
-        <table class="cost-table">
-          <thead>
-            <tr>
-              <th style="width: 60px;">CODE</th>
-              <th>DESCRIPTION</th>
-              <th style="width: 100px; text-align: right;">QUANTITY</th>
-              <th style="width: 100px; text-align: right;">COST</th>
-              <th style="width: 120px; text-align: right;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody id="sec-foundations">
-            <!-- Dynamic rows -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 03 - STRUCTURES -->
-      <div class="category-block">
-        <div class="category-header">
-          <span>▲ 03 - STRUCTURES</span>
-          <span id="cat-03-total">0.00 €</span>
-        </div>
-        <table class="cost-table">
-          <thead>
-            <tr>
-              <th style="width: 60px;">CODE</th>
-              <th>DESCRIPTION</th>
-              <th style="width: 100px; text-align: right;">QUANTITY</th>
-              <th style="width: 100px; text-align: right;">COST</th>
-              <th style="width: 120px; text-align: right;">TOTAL</th>
-            </tr>
-          </thead>
-          <tbody id="sec-structures">
-            <!-- Dynamic rows -->
-          </tbody>
-        </table>
-      </div>
+    <!-- Info Banner / Tooltip -->
+    <div class="info-banner">
+      <span>ℹ️ <strong>Interval A/B</strong> lets you compare historical estimates across different sprints and project revisions.</span>
+      <span style="cursor:pointer;" onclick="this.parentElement.style.display='none'">✕</span>
     </div>
 
-    <!-- RIGHT ANALYTICS & SUMMARY PANEL -->
-    <div class="panel analytics-panel">
-      <div class="panel-title">▲ ESTIMATE SUMMARY</div>
+    <!-- Main Workspace Split -->
+    <div class="dashboard-grid">
       
-      <div class="summary-card">
-        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
-          <span>TOTAL PROJECT ESTIMATE (<span class="curr-symbol">€</span>)</span>
+      <!-- Left Main Table -->
+      <div>
+        <div class="table-container">
+          <div class="section-title-bar">Budget Summary</div>
+          <table class="estimate-table" id="main-table">
+            <thead>
+              <tr>
+                <th style="width: 200px;">Project name</th>
+                <th style="text-align: right;">Original Budget ($)</th>
+                <th style="text-align: right;">Approved CO's <span class="tooltip-icon" title="Approved Change Orders">i</span></th>
+                <th style="text-align: right;">Job to Date Costs <span class="tooltip-icon" title="Costs accrued to date">i</span></th>
+                <th style="text-align: right;">Revised Budget ($)</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
         </div>
-        <div class="summary-val-large" id="summary-grand-total">0.00</div>
+      </div>
+
+      <!-- Right Analytics Sidebar -->
+      <div class="analytics-col">
         
-        <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:8px; color:var(--text-muted);">
-          <span>Target total (<span class="curr-symbol">€</span>)</span>
-          <span>0.00</span>
+        <!-- Filter Controls -->
+        <div class="analytics-card" style="padding: 10px;">
+          <div style="display: flex; gap: 10px;">
+            <div style="flex:1;">
+              <label style="font-size:10px; font-weight:bold; color:var(--text-secondary);">Budgeted?</label>
+              <select style="width:100%; padding:4px; font-size:11px; border:1px solid var(--border-color); border-radius:4px;"><option>All</option></select>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:10px; font-weight:bold; color:var(--text-secondary);">Sub Job</label>
+              <select style="width:100%; padding:4px; font-size:11px; border:1px solid var(--border-color); border-radius:4px;"><option>All</option></select>
+            </div>
+          </div>
         </div>
+
+        <!-- % Committed List -->
+        <div class="analytics-card">
+          <div class="analytics-title">% Committed</div>
+          <div class="percent-list">
+            <div class="percent-item"><span>03 | Gear Sets</span><span class="percent-badge">863.74%</span></div>
+            <div class="percent-item"><span>02 | Site Construction</span><span class="percent-badge">909.68%</span></div>
+            <div class="percent-item"><span>05 | Metals</span><span class="percent-badge">608.58%</span></div>
+            <div class="percent-item"><span>16 | Mechanical</span><span class="percent-badge">289.70%</span></div>
+            <div class="percent-item"><span>01 | General Requirements</span><span class="percent-badge">245.64%</span></div>
+            <div class="percent-item"><span>02 | Work Orders</span><span class="percent-badge">100.00%</span></div>
+          </div>
+        </div>
+
+        <!-- Chart 1: Revised Budget vs Estimated Cost -->
+        <div class="analytics-card">
+          <div class="analytics-title">Revised Budget vs Estimated Cost at Completion</div>
+          <div class="chart-box">
+            <canvas id="budgetvsCostChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Budget vs Committed Costs -->
+        <div class="analytics-card">
+          <div class="analytics-title">Budget vs Committed Costs</div>
+          <div class="chart-box">
+            <canvas id="committedChart"></canvas>
+          </div>
+        </div>
+
       </div>
 
-      <!-- PIE CHART GRAPHIC -->
-      <div class="chart-container">
-        <div class="pie-chart"></div>
-      </div>
-
-      <!-- COST BREAKDOWN HIERARCHY -->
-      <div class="panel-title" style="margin-top: 16px;">ESTIMATE BREAKDOWN (<span class="curr-symbol">€</span>)</div>
-      <div class="breakdown-list">
-        <div class="breakdown-item bold"><span>CONCEPT</span><span>TOTAL</span></div>
-        <div class="breakdown-item bold"><span>Above grade estimate</span><span id="bk-above">0.00</span></div>
-        <div class="breakdown-item" style="padding-left:10px;"><span>• Site Works</span><span id="bk-site">0.00</span></div>
-        <div class="breakdown-item" style="padding-left:10px;"><span>• Building</span><span id="bk-building">0.00</span></div>
-        
-        <div class="breakdown-item bold" style="margin-top:8px;"><span>Below grade estimate</span><span id="bk-below">0.00</span></div>
-        <div class="breakdown-item bold"><span>General Conditions</span><span id="bk-general">0.00</span></div>
-        <div class="breakdown-item bold"><span>Overhead, Profit</span><span id="bk-overhead">0.00</span></div>
-        <div class="breakdown-item bold"><span>Soft Costs</span><span id="bk-soft">0.00</span></div>
-      </div>
-
-      <div class="panel-title" style="margin-top: 20px;">RATIOS</div>
-      <div class="breakdown-list">
-        <div class="breakdown-item"><span>ENCC / Units</span><span id="ratio-encc">0.00 €/u</span></div>
-      </div>
     </div>
 
   </div>
 
-  <div id="toast-banner">Notification</div>
-
   <script>
-    let currentSymbol = '€';
-
-    const defaultItems = [
-      // Site Works
-      { sec: 'sec-siteworks', code: '50.01', desc: 'Site clearing/demolition, tree removal, etc.', qty: 0, unit: 'm²', cost: 0 },
-      { sec: 'sec-siteworks', code: '50.02', desc: 'Landscaping, irrigation and sprinkler head systems', qty: 0, unit: 'm²', cost: 100 },
-      { sec: 'sec-siteworks', code: '50.03', desc: 'Swimming pool', qty: 0, unit: 'm²', cost: 450 },
-      { sec: 'sec-siteworks', code: '50.04', desc: 'Site enclosure (fences, etc.)', qty: 0, unit: 'lm', cost: 96 },
-      { sec: 'sec-siteworks', code: '50.05', desc: 'Site pedestrian doors', qty: 1, unit: 'unit', cost: 830 },
-      
-      // Foundations
-      { sec: 'sec-foundations', code: '02.01', desc: 'Foundation excavation, fill & grading', qty: 503.50, unit: 'm³', cost: 21 },
-      { sec: 'sec-foundations', code: '02.02', desc: 'Foundation construction (piling, caissons, etc.)', qty: 503.50, unit: 'm³', cost: 95 },
-      
-      // Structures
-      { sec: 'sec-structures', code: '03.01', desc: 'Beams and trusses', qty: 2213.30, unit: 'lm', cost: 95 },
-      { sec: 'sec-structures', code: '03.02', desc: 'Columns', qty: 1931.40, unit: 'lm', cost: 43 },
-      { sec: 'sec-structures', code: '03.03', desc: 'Floor slabs', qty: 13568.22, unit: 'm²', cost: 85 }
+    // Data Structure Cloned from Image
+    const projectsData = [
+      {
+        id: 'p1',
+        name: 'Vortex Business Centre',
+        expanded: true,
+        items: [
+          { name: '01 | General Requirements', original: 390500.00, co: 0.00, jobToDate: 52600.00 },
+          { name: '02 | Site Construction', original: 1173410.00, co: 0.00, jobToDate: 0.00 },
+          { name: '03 | Concrete', original: 1628500.00, co: 0.00, jobToDate: 500.00 },
+          { name: '04 | Masonry', original: 1691000.00, co: 0.00, jobToDate: 0.00 },
+          { name: '05 | Metals', original: 1175770.00, co: 0.00, jobToDate: 0.00 },
+          { name: '06 | Wood and Plastics', original: 2270020.00, co: 0.00, jobToDate: 0.00 },
+          { name: '07 | Doors and Windows', original: 1206370.00, co: 0.00, jobToDate: 880.00 },
+          { name: '08 | Finishes', original: 1420700.00, co: 0.00, jobToDate: 300.00 },
+          { name: '09 | SPECIALTIES', original: 193290.00, co: 0.00, jobToDate: 0.00 }
+        ]
+      },
+      {
+        id: 'p2',
+        name: 'Prime Contact 1',
+        expanded: false,
+        items: [
+          { name: '01 | General Requirements', original: 10.00, co: 0.00, jobToDate: 0.00 }
+        ]
+      },
+      {
+        id: 'p3',
+        name: 'Vortex Business Centre (Phase 2)',
+        expanded: false,
+        items: [
+          { name: '01 | General Requirements', original: 1028495.00, co: 0.00, jobToDate: 123231.00 },
+          { name: '02 | Site Construction', original: 1175770.00, co: 0.00, jobToDate: 0.00 },
+          { name: '03 | Concrete', original: 11583069.00, co: 0.00, jobToDate: 2500.00 }
+        ]
+      }
     ];
 
-    function initTable() {
-      defaultItems.forEach((item, idx) => {
-        const tbody = document.getElementById(item.sec);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td style="color:var(--text-muted); font-weight:600;">${item.code}</td>
-          <td><input type="text" class="cell-input cell-text" value="${item.desc}"></td>
-          <td><input type="number" class="cell-input item-qty" value="${item.qty}" oninput="calculateEstimate()"></td>
-          <td><input type="number" class="cell-input item-cost" value="${item.cost}" oninput="calculateEstimate()"></td>
-          <td style="text-align:right; font-weight:bold;" class="item-total">0.00</td>
+    let chart1Instance = null;
+    let chart2Instance = null;
+
+    // Render Table Data
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      projectsData.forEach((project, pIdx) => {
+        // Calculate Parent Totals
+        const parentOriginal = project.items.reduce((sum, i) => sum + i.original, 0);
+        const parentCO = project.items.reduce((sum, i) => sum + i.co, 0);
+        const parentJob = project.items.reduce((sum, i) => sum + i.jobToDate, 0);
+        const parentRevised = parentOriginal + parentCO;
+
+        // Parent Row
+        const parentTr = document.createElement('tr');
+        parentTr.className = 'row-parent';
+        parentTr.innerHTML = `
+          <td>
+            <span class="toggle-btn" onclick="toggleExpand(${pIdx})">${project.expanded ? '▼' : '►'}</span>
+            ${project.name}
+          </td>
+          <td style="text-align:right;">${formatCurrency(parentOriginal)}</td>
+          <td style="text-align:right;">${formatCurrency(parentCO)}</td>
+          <td style="text-align:right;">${formatCurrency(parentJob)}</td>
+          <td style="text-align:right;">${formatCurrency(parentRevised)}</td>
         `;
-        tbody.appendChild(row);
-      });
-      calculateEstimate();
-    }
+        tbody.appendChild(parentTr);
 
-    function calculateEstimate() {
-      let siteTotal = 0;
-      let foundationTotal = 0;
-      let structureTotal = 0;
+        // Child Rows (If Expanded)
+        if (project.expanded) {
+          project.items.forEach((item, cIdx) => {
+            const childTr = document.createElement('tr');
+            childTr.className = 'row-child';
+            const revised = item.original + item.co;
 
-      // Calculate Site Works
-      document.querySelectorAll('#sec-siteworks tr').forEach(row => {
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
-        const total = qty * cost;
-        siteTotal += total;
-        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
-      });
-
-      // Calculate Foundations
-      document.querySelectorAll('#sec-foundations tr').forEach(row => {
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
-        const total = qty * cost;
-        foundationTotal += total;
-        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
-      });
-
-      // Calculate Structures
-      document.querySelectorAll('#sec-structures tr').forEach(row => {
-        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-        const cost = parseFloat(row.querySelector('.item-cost').value) || 0;
-        const total = qty * cost;
-        structureTotal += total;
-        row.querySelector('.item-total').innerText = total.toLocaleString('en-US', {minimumFractionDigits: 2});
-      });
-
-      // Update Section UI
-      document.getElementById('cat-50-total').innerText = `${siteTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
-      document.getElementById('cat-02-total').innerText = `${foundationTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
-      document.getElementById('cat-03-total').innerText = `${structureTotal.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
-
-      const aboveGradeSum = siteTotal + foundationTotal + structureTotal;
-      document.getElementById('above-grade-total').innerText = `${aboveGradeSum.toLocaleString('en-US', {minimumFractionDigits: 2})} ${currentSymbol}`;
-
-      // Update Right Breakdown
-      const softCosts = aboveGradeSum * 0.12;
-      const grandTotal = aboveGradeSum + softCosts;
-
-      document.getElementById('summary-grand-total').innerText = grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2});
-      document.getElementById('bk-above').innerText = aboveGradeSum.toLocaleString('en-US', {minimumFractionDigits: 2});
-      document.getElementById('bk-site').innerText = siteTotal.toLocaleString('en-US', {minimumFractionDigits: 2});
-      document.getElementById('bk-building').innerText = (foundationTotal + structureTotal).toLocaleString('en-US', {minimumFractionDigits: 2});
-      document.getElementById('bk-soft').innerText = softCosts.toLocaleString('en-US', {minimumFractionDigits: 2});
-    }
-
-    function updateCurrency() {
-      const val = document.getElementById('currency-select').value;
-      if (val === 'EUR') currentSymbol = '€';
-      if (val === 'USD') currentSymbol = '$';
-      if (val === 'GBP') currentSymbol = '£';
-
-      document.querySelectorAll('.curr-symbol').forEach(el => el.innerText = currentSymbol);
-      calculateEstimate();
-    }
-
-    function exportToExcel() {
-      const exportData = [["Code", "Description", "Quantity", "Cost", "Total"]];
-      document.querySelectorAll('.cost-table tr').forEach(row => {
-        const inputs = row.querySelectorAll('input');
-        if (inputs.length > 0) {
-          const code = row.cells[0].innerText;
-          const desc = inputs[0].value;
-          const qty = parseFloat(inputs[1].value) || 0;
-          const cost = parseFloat(inputs[2].value) || 0;
-          exportData.push([code, desc, qty, cost, qty * cost]);
+            childTr.innerHTML = `
+              <td style="padding-left: 28px; color: #475569;">${item.name}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'original')">${formatCurrency(item.original)}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'co')">${formatCurrency(item.co)}</td>
+              <td class="editable-cell" onclick="makeEditable(this, ${pIdx}, ${cIdx}, 'jobToDate')">${formatCurrency(item.jobToDate)}</td>
+              <td style="text-align:right; font-weight:600;">${formatCurrency(revised)}</td>
+            `;
+            tbody.appendChild(childTr);
+          });
         }
       });
-      const worksheet = XLSX.utils.aoa_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Cost_Estimate");
-      XLSX.writeFile(workbook, "ARCHITECHTURES_Cost_Export.xlsx");
+
+      updateCharts();
     }
 
-    window.onload = initTable;
+    function toggleExpand(index) {
+      projectsData[index].expanded = !projectsData[index].expanded;
+      renderTable();
+    }
+
+    function formatCurrency(val) {
+      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Inline Editing Functionality
+    function makeEditable(cell, pIdx, cIdx, field) {
+      if (cell.querySelector('input')) return;
+      const currentValue = projectsData[pIdx].items[cIdx][field];
+      cell.innerHTML = `<input type="number" value="${currentValue}" step="100" onblur="saveCell(this, ${pIdx}, ${cIdx}, '${field}')" onkeydown="if(event.key==='Enter') this.blur()">`;
+      cell.querySelector('input').focus();
+    }
+
+    function saveCell(input, pIdx, cIdx, field) {
+      const newVal = parseFloat(input.value) || 0;
+      projectsData[pIdx].items[cIdx][field] = newVal;
+      renderTable();
+    }
+
+    // Search Filter
+    function filterTable() {
+      const term = document.getElementById('global-search').value.toLowerCase();
+      document.querySelectorAll('#table-body tr.row-child').forEach(row => {
+        const text = row.cells[0].innerText.toLowerCase();
+        row.style.display = text.includes(term) ? '' : 'none';
+      });
+    }
+
+    // Chart Visualizations
+    function initCharts() {
+      // Horizontal Bar Chart
+      const ctx1 = document.getElementById('budgetvsCostChart').getContext('2d');
+      chart1Instance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['03 Concrete', '02 Site', '15 Mech', '05 Metals'],
+          datasets: [
+            { label: 'Estimated Cost', data: [162, 117, 80, 117], backgroundColor: '#10b981' },
+            { label: 'Revised Budget', data: [162, 117, 95, 117], backgroundColor: '#0284c7' }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } },
+          scales: { x: { display: false }, y: { ticks: { font: { size: 9 } } } }
+        }
+      });
+
+      // Grouped Bar Chart
+      const ctx2 = document.getElementById('committedChart').getContext('2d');
+      chart2Instance = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: ['02 Site', '05 Metals', '15 Mech', '01 Gen', '16 Elec'],
+          datasets: [
+            { label: 'Revised Budget', data: [40, 25, 22, 18, 12], backgroundColor: '#3b82f6' },
+            { label: 'Committed Costs', data: [36, 15, 6, 4, 1], backgroundColor: '#f59e0b' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } },
+          scales: { y: { display: false }, x: { ticks: { font: { size: 9 } } } }
+        }
+      });
+    }
+
+    function updateCharts() {
+      if (!chart1Instance || !chart2Instance) return;
+      
+      // Update chart dataset based on current first project values dynamically
+      const items = projectsData[0].items;
+      chart1Instance.data.datasets[0].data = [items[2].original / 10000, items[1].original / 10000, 80, items[4].original / 10000];
+      chart1Instance.update();
+    }
+
+    window.onload = () => {
+      renderTable();
+      initCharts();
+    };
   </script>
 </body>
 </html>
