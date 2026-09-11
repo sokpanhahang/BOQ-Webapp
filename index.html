@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Green BOQ Pro — Excel Engine</title>
-  <!-- SheetJS Library for Excel Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     :root {
-      --primary: #064e3b;       /* Deep Emerald Green */
-      --primary-light: #059669; /* Bright Emerald Green */
-      --accent: #10b981;        /* Light Accent Green */
-      --bg-light: #f0fdf4;      /* Mint Tinted White */
+      --primary: #064e3b;
+      --primary-light: #059669;
+      --accent: #10b981;
+      --bg-light: #f0fdf4;
       --text-dark: #0f172a;
       --border: #a7f3d0;
       --danger: #ef4444;
@@ -21,7 +20,6 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-light); margin: 0; padding: 12px; color: var(--text-dark); }
 
-    /* Authentication Overlay */
     #auth-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(6, 78, 59, 0.95);
@@ -35,7 +33,6 @@
     .auth-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; }
     .btn-auth { width: 100%; padding: 12px; background: var(--primary-light); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     
-    /* Google Sign In Button */
     .btn-google {
       width: 100%; padding: 10px; background: #ffffff; color: #333; border: 1px solid #cbd5e1;
       border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;
@@ -43,7 +40,6 @@
     }
     .btn-google:hover { background: #f8fafc; }
 
-    /* Divider */
     .auth-divider {
       display: flex; align-items: center; text-align: center; margin: 12px 0; color: #64748b; font-size: 12px;
     }
@@ -53,12 +49,10 @@
     .auth-divider::before { margin-right: .5em; }
     .auth-divider::after { margin-left: .5em; }
 
-    /* Auth Error Banner */
     .auth-error {
-      color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; display: none; word-wrap: break-word;
+      color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; display: none; word-wrap: break-wrap;
     }
 
-    /* App Header Bar */
     .app-header {
       background: var(--primary); color: white; padding: 14px 20px; border-radius: 8px;
       display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
@@ -68,14 +62,18 @@
     .user-badge { background: #022c22; color: #a7f3d0; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
     .btn-logout { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-    /* Action Toolbar */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin: 16px 0; gap: 10px; flex-wrap: wrap; }
     .btn-action { background: var(--primary-light); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
     .btn-save { background: #d97706; }
     .btn-export { background: #0284c7; }
     .btn-action:hover { opacity: 0.9; }
 
-    /* Excel Grid Table Styling */
+    #toast-banner {
+      position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: white;
+      padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: bold;
+      display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2000;
+    }
+
     .excel-container {
       background: white; border: 1px solid var(--border); border-radius: 8px;
       overflow-x: auto; box-shadow: 0 2px 6px rgba(6, 78, 59, 0.05); margin-bottom: 20px;
@@ -84,12 +82,10 @@
     table.excel-grid th { background: #d1fae5; color: var(--primary); padding: 10px; border: 1px solid var(--border); font-weight: bold; }
     table.excel-grid td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; }
 
-    /* Category Section Separator Row */
     tr.category-header-row td {
       background: var(--primary); color: white; font-weight: bold; font-size: 15px; padding: 10px;
     }
 
-    /* Editable Input Cells */
     input.excel-input {
       width: 100%; padding: 6px; border: 1px solid transparent; border-radius: 4px;
       font-size: 14px; background: transparent; text-align: right; font-weight: 500;
@@ -99,7 +95,6 @@
     }
     input.excel-text { text-align: left; }
 
-    /* Remark Field Input */
     input.remark-input {
       width: 100%; margin-top: 4px; padding: 4px 6px; font-size: 12px;
       border: 1px dashed #cbd5e1; border-radius: 4px; color: #475569; background: #f8fafc;
@@ -108,7 +103,6 @@
 
     .btn-remove { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-    /* Modal for Add Items */
     #modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 500;
@@ -116,7 +110,6 @@
     .modal-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 420px; border-top: 6px solid var(--primary-light); }
     .modal-select, .modal-input { width: 100%; padding: 10px; margin: 6px 0 14px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
-    /* Summary Dashboard */
     .summary-box { background: var(--primary); color: white; padding: 16px; border-radius: 8px; margin-top: 20px; }
     .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
     .grand-total { font-size: 18px; font-weight: bold; border-top: 1px solid var(--accent); padding-top: 10px; color: #a7f3d0; }
@@ -124,10 +117,9 @@
 </head>
 <body>
 
-  <!-- FIREBASE INTEGRATION MODULE -->
+  <!-- FIREBASE ENGINE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
     import { 
       getAuth, 
       createUserWithEmailAndPassword, 
@@ -155,23 +147,24 @@
       measurementId: "G-8KS68FXEJC"
     };
 
-    // Initialize Firebase Services
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
-
-    // Initialize Analytics safely
-    isSupported().then(supported => {
-      if (supported) { getAnalytics(app); }
-    });
 
     window.firebaseApp = app;
     window.auth = auth;
     window.db = db;
     window.currentUser = null;
 
-    // Listen to real-time Auth State Changes & load user data
+    window.showToast = (msg, isError = false) => {
+      const toast = document.getElementById('toast-banner');
+      toast.innerText = msg;
+      toast.style.background = isError ? '#ef4444' : '#059669';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    };
+
     onAuthStateChanged(auth, async (user) => {
       const overlay = document.getElementById('auth-overlay');
       const userDisplay = document.getElementById('user-display');
@@ -182,7 +175,6 @@
         userDisplay.innerText = `Logged In: ${displayName}`;
         overlay.style.display = 'none';
 
-        // Load existing member BOQ data or initialize fresh template for new user
         await loadUserBOQData(user.uid);
       } else {
         window.currentUser = null;
@@ -192,10 +184,16 @@
       }
     });
 
-    // Save BOQ Document to Firestore
     window.saveUserBOQData = async () => {
-      if (!window.currentUser) return;
+      if (!window.currentUser) {
+        window.showToast("You must be logged in to save data.", true);
+        return;
+      }
+      
       const uid = window.currentUser.uid;
+      const saveBtn = document.getElementById('btn-save-cloud');
+      saveBtn.innerText = "⏳ Saving...";
+      saveBtn.disabled = true;
 
       const items = [];
       const rows = document.querySelectorAll('.item-data-row');
@@ -212,17 +210,20 @@
 
       try {
         await setDoc(doc(db, "user_boqs", uid), {
+          userEmail: window.currentUser.email,
           updatedAt: new Date().toISOString(),
           items: items
         });
-        alert("BOQ Saved successfully to your cloud account!");
+        window.showToast("✅ BOQ saved successfully to your cloud account!");
       } catch (err) {
         console.error("Firestore Save Error:", err);
-        alert("Failed to save BOQ data: " + err.message);
+        window.showToast("❌ Save Failed: " + err.message, true);
+      } finally {
+        saveBtn.innerText = "☁️ Save BOQ to Cloud";
+        saveBtn.disabled = false;
       }
     };
 
-    // Load BOQ Document from Firestore
     async function loadUserBOQData(uid) {
       clearGrid();
       try {
@@ -230,13 +231,12 @@
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists() && docSnap.data().items && docSnap.data().items.length > 0) {
-          // Member user with existing saved data
           const items = docSnap.data().items;
           items.forEach(item => {
             renderGridRow(item.category, item.desc, item.remark, item.unit, item.qty, item.rate);
           });
+          window.showToast("Welcome back! Saved BOQ loaded.");
         } else {
-          // New user gets a clean default template item
           window.confirmAddItemWithParams("Architectural Works", "Floor Tiles (60x60 Porcelain)", "", "m²", 0, 25.00);
         }
         calculateBOQ();
@@ -246,7 +246,6 @@
       }
     }
 
-    // Google Sign In / Sign Up
     window.firebaseGoogleAuth = async () => {
       try {
         await signInWithPopup(auth, googleProvider);
@@ -291,7 +290,6 @@
     };
   </script>
 
-  <!-- Dropdown List for Units -->
   <datalist id="unit-options">
     <option value="m²"></option>
     <option value="m³"></option>
@@ -303,7 +301,8 @@
     <option value="Pcs"></option>
   </datalist>
 
-  <!-- AUTHENTICATION OVERLAY -->
+  <div id="toast-banner">Notification</div>
+
   <div id="auth-overlay">
     <div class="auth-card" id="signin-box">
       <h2>Sign In — BOQ Engine</h2>
@@ -330,7 +329,7 @@
 
       <div class="auth-divider">OR</div>
 
-      <input type="text" class="auth-input" id="auth-name-up" placeholder="Full Name (e.g., SOKPANHA)">
+      <input type="text" class="auth-input" id="auth-name-up" placeholder="Full Name">
       <input type="email" class="auth-input" id="auth-email-up" placeholder="Email Address">
       <input type="password" class="auth-input" id="auth-pass-up" placeholder="Password (min. 6 characters)">
       <button class="btn-auth" onclick="handleSignUp()">Sign Up with Email</button>
@@ -339,7 +338,6 @@
     </div>
   </div>
 
-  <!-- MAIN APP HEADER -->
   <div class="app-header">
     <div>
       <h1 class="app-title">BOQ Builder Engine</h1>
@@ -353,11 +351,10 @@
 
   <div class="toolbar">
     <button class="btn-action" onclick="openAddModal()">+ Add Item / Custom Item</button>
-    <button class="btn-action btn-save" onclick="window.saveUserBOQData()">☁️ Save BOQ to Cloud</button>
+    <button class="btn-action btn-save" id="btn-save-cloud" onclick="window.saveUserBOQData()">☁️ Save BOQ to Cloud</button>
     <button class="btn-action btn-export" onclick="exportToExcel()">📊 Export to Excel (.xlsx)</button>
   </div>
 
-  <!-- EXCEL SPREADSHEET FORM -->
   <div class="excel-container">
     <table class="excel-grid" id="boq-grid-table">
       <thead>
@@ -372,7 +369,6 @@
         </tr>
       </thead>
 
-      <!-- CATEGORY SECTIONS -->
       <tbody id="sec-structure" data-prefix="1">
         <tr class="category-header-row">
           <td colspan="7">1.0 STRUCTURE WORKS</td>
@@ -393,7 +389,6 @@
     </table>
   </div>
 
-  <!-- MODAL PANEL FOR ADDING CATALOG OR CUSTOM ITEMS -->
   <div id="modal-overlay">
     <div class="modal-box">
       <h3 style="margin-top:0; color: var(--primary);">Add BOQ Item</h3>
@@ -407,7 +402,6 @@
 
       <label style="font-size:12px; font-weight:bold;">2. Select Standard Item OR Type Custom Item:</label>
       <select class="modal-select" id="modal-subitem" onchange="toggleCustomInput()">
-        <!-- Populated dynamically -->
       </select>
 
       <div id="custom-item-container" style="display:none;">
@@ -422,7 +416,6 @@
     </div>
   </div>
 
-  <!-- SUMMARY DASHBOARD -->
   <div class="summary-box">
     <div class="summary-row">
       <span>Sub-Total:</span>
